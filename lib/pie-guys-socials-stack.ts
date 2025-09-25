@@ -29,12 +29,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
       "OpenAIKeySecret",
       "OPENAI_API_KEY_SECRET_NAME"
     );
-    // Optionally AgentDB API key as secret
-    const agentdbSecret = secrets.Secret.fromSecretNameV2(
-      this,
-      "AgentDBSecret",
-      "AGENTDB_API_KEY_SECRET_NAME"
-    );
 
     // Lambda
     const worker = new lambdaNode.NodejsFunction(this, "WeeklyInsightWorker", {
@@ -46,7 +40,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
       environment: {
         IG_TOKEN_SECRET_NAME: igSecret.secretName,
         OPENAI_SECRET_NAME: openAiSecret.secretName,
-        AGENTDB_SECRET_NAME: agentdbSecret.secretName,
         AGENTDB_URL: "https://api.agentdb.dev/your-db-endpoint", // replace with your AgentDB URL
         FROM_EMAIL: "no-reply@yourdomain.com",
         TO_EMAIL: "owner@pieguys.example",
@@ -58,7 +51,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
     // Allow Lambda to read those secrets
     igSecret.grantRead(worker.role!);
     openAiSecret.grantRead(worker.role!);
-    agentdbSecret.grantRead(worker.role!);
 
     // SES send email permissions
     worker.addToRolePolicy(
@@ -68,14 +60,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
       })
     );
 
-    // If you want to store small flags in SSM Parameter Store for state, grant appropriate permission
-    // worker.addToRolePolicy(
-    //   new iam.PolicyStatement({
-    //     actions: ["ssm:GetParameter", "ssm:PutParameter"],
-    //     resources: ["*"],
-    //   })
-    // );
-
     // EventBridge rule -> Lambda target
     const rule = new events.Rule(this, "WeeklyRule", {
       schedule: scheduleCron,
@@ -84,6 +68,37 @@ export class PieGuysSocialsStack extends cdk.Stack {
     });
 
     rule.addTarget(new targets.LambdaFunction(worker));
+
+    const refreshLambda = new lambdaNode.NodejsFunction(
+      this,
+      "RefreshIgTokenLambda",
+      {
+        // runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambda/handler.ts`,
+        handler: "refresh.handler",
+        environment: {
+          IG_SECRET_NAME: "IG_LONG_LIVED_TOKEN",
+          FB_APP_ID: process.env.FB_APP_ID!,
+          FB_APP_SECRET: process.env.FB_APP_SECRET!,
+        },
+      }
+    );
+
+    refreshLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+        ],
+        resources: ["*"], // 🔒 tighten to specific secret ARN in prod
+      })
+    );
+
+    // Run every 50 days (approx) → safer to do monthly
+    new events.Rule(this, "RefreshSchedule", {
+      schedule: events.Schedule.cron({ day: "1", hour: "0", minute: "0" }),
+      targets: [new targets.LambdaFunction(refreshLambda)],
+    });
 
     // Outputs
     new cdk.CfnOutput(this, "LambdaFunctionName", {

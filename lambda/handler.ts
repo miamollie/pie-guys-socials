@@ -4,10 +4,12 @@ import {
 } from "@aws-sdk/client-secrets-manager";
 import fetch from "node-fetch";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
-import { AWS_REGION } from "../consts"; //move to env instead
+import OpenAI from "openai";
 
-const secretsClient = new SecretsManagerClient({ region: AWS_REGION });
-const sesClient = new SESClient({ region: AWS_REGION });
+const secretsClient = new SecretsManagerClient({
+  region: process.env.AWS_REGION,
+});
+const sesClient = new SESClient({ region: process.env.AWS_REGION });
 
 async function getSecretValue(name: string): Promise<string> {
   const resp = await secretsClient.send(
@@ -17,29 +19,24 @@ async function getSecretValue(name: string): Promise<string> {
   return resp.SecretString;
 }
 
-// 1) Get secrets
 const igTokenSecretName = process.env.IG_TOKEN_SECRET_NAME!;
-const openAiSecretName = process.env.OPENAI_SECRET_NAME!;
 const igBusinessId = process.env.IG_BUSINESS_ID || "YOUR_IG_BUSINESS_ID";
 const toEmail = process.env.TO_EMAIL!;
 const fromEmail = process.env.FROM_EMAIL!;
-const openAIURL = process.env.OPEN_AI_URL!;
 
 export const handler = async (event: any = {}): Promise<any> => {
   console.log("Event:", JSON.stringify(event).slice(0, 200));
 
-  // 2) Pull Instagram metrics (simple example: get recent media)
   try {
-    // Adjust IG endpoint and version to your IG Business Account specifics
-    // todo move the "from" helper out into a utils dir
+    // Get IG insights
     const igInsights = await getIGInsights();
 
-    // 4) Ask LLM for weekly analysis (simple OpenAI example; adapt to your provider or MCP)
-
+    // Ask LLM for weekly analysis and suggestions
     const aiReccomendations = await getRecommendation(
       JSON.stringify(igInsights)
     );
 
+    // Send email with recommendations
     await sendEmail(aiReccomendations);
 
     return { status: "ok" };
@@ -68,41 +65,20 @@ async function getIGInsights(): Promise<JSON> {
 }
 
 async function getRecommendation(igInsights: string) {
-  // do await for all instead
-  const openAiKey = await getSecretValue(openAiSecretName);
-  // use OPEN AI SDK instead
-  const openAiResp = await fetch(openAIURL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini", // Use whichever model you have access to
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an assistant that summarizes social media performance from tabular data and suggests 3 post drafts with captions and hashtags.",
-        },
-        {
-          role: "user",
-          content: `Here is the last week's posts:\n\n${JSON.stringify(
-            igInsights || [],
-            null,
-            2
-          )}\n\nPlease summarize top performing themes, 3 suggested posts (caption + hashtags), and include the evidence lines pointing to the original post IDs.`,
-        },
-      ],
-      max_tokens: 1000,
-    }),
+  const apiKey = await getSecretValue(process.env.OPEN_AI_SECRET_NAME!);
+  const openAIClient = new OpenAI({ apiKey });
+  const r = await openAIClient.responses.create({
+    model: "gpt-4o",
+    instructions:
+      "You are an assistant that summarizes social media performance from tabular data and suggests 3 post drafts with captions and hashtags.",
+    input: `Here is the last week's posts:\n\n${JSON.stringify(
+      igInsights || [],
+      null,
+      2
+    )}\n\nPlease summarize top performing themes, 3 suggested posts (caption + hashtags), and include the evidence lines pointing to the original post IDs.`,
   });
 
-  const openAiJson = await openAiResp.json();
-  return (
-    // openAiJson?.choices?.[0]?.message?.content ||
-    JSON.stringify(openAiJson).slice(0, 200)
-  );
+  return r.output_text;
 }
 
 async function sendEmail(aiReccomendations: string) {
