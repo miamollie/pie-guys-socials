@@ -1,0 +1,23 @@
+{
+   "createSecret": {
+      "Step": "createSecret",
+      "SecretId": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:instagram/long-lived-token-AbCdEf",
+      "ClientRequestToken": "11111111-2222-3333-4444-555555555555"
+    },
+   "setSecret": {
+      "Step": "setSecret",
+      "SecretId": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:instagram/long-lived-token-AbCdEf",
+      "ClientRequestToken": "22222222-3333-4444-5555-666666666666"
+    },
+    "testSecret": {
+      "Step": "testSecret",
+      "SecretId": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:instagram/long-lived-token-AbCdEf",
+      "ClientRequestToken": "33333333-4444-5555-6666-777777777777"
+    },
+    "finishSecret": {
+      "Step": "finishSecret",
+      "SecretId": "arn:aws:secretsmanager:eu-west-1:123456789012:secret:instagram/long-lived-token-AbCdEf",
+      "ClientRequestToken": "44444444-5555-6666-7777-888888888888"
+    }
+  }
+  

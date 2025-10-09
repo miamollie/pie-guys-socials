@@ -2,7 +2,6 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from "@aws-sdk/client-secrets-manager";
-import fetch from "node-fetch";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import OpenAI from "openai";
 
@@ -19,14 +18,12 @@ async function getSecretValue(name: string): Promise<string> {
   return resp.SecretString;
 }
 
-const igTokenSecretName = process.env.IG_TOKEN_SECRET_NAME!;
+const igTokenSecretName = process.env.IG_SECRET_NAME!;
 const igBusinessId = process.env.IG_BUSINESS_ID || "YOUR_IG_BUSINESS_ID";
 const toEmail = process.env.TO_EMAIL!;
 const fromEmail = process.env.FROM_EMAIL!;
 
 export const handler = async (event: any = {}): Promise<any> => {
-  console.log("Event:", JSON.stringify(event).slice(0, 200));
-
   try {
     // Get IG insights
     const igInsights = await getIGInsights();

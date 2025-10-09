@@ -11,14 +11,14 @@ export class PieGuysSocialsStack extends cdk.Stack {
     super(scope, id, props);
 
     // ********** Configuration (adjust as needed) **********
-    const scheduleCron = events.Schedule.expression("cron(0 17 ? * FRI *)");
+    const insightsCron = events.Schedule.expression("cron(0 17 ? * FRI *)");
     // This triggers every Friday at 17:00 UTC (adjust if you want strict Europe/Dublin handling)
     // *******************************************************
 
     // Secrets (create in console or via CDK separately) - we reference existing secrets by name/ARN
     // Expect these secrets to exist:
-    // - IG_TOKEN_SECRET_NAME (contains the Instagram Graph API token)
-    // - OPENAI_API_KEY_SECRET_NAME (or LLM provider key)
+    // - IG_SECRET_NAME (contains the Instagram Graph API token)
+    // - OPEN_AI_SECRET_NAME (or LLM provider key)
     const igSecret = secrets.Secret.fromSecretNameV2(
       this,
       "IgTokenSecret",
@@ -37,8 +37,8 @@ export class PieGuysSocialsStack extends cdk.Stack {
       memorySize: 1024,
       timeout: cdk.Duration.minutes(2),
       environment: {
-        IG_TOKEN_SECRET_NAME: igSecret.secretName,
-        OPENAI_SECRET_NAME: openAiSecret.secretName,
+        IG_SECRET_NAME: igSecret.secretName,
+        OPEN_AI_SECRET_NAME: openAiSecret.secretName,
         FROM_EMAIL: process.env.FROM_EMAIL!,
         TO_EMAIL: process.env.TO_EMAIL!,
         REGION: this.region,
@@ -46,20 +46,41 @@ export class PieGuysSocialsStack extends cdk.Stack {
     });
 
     // Allow Lambda to read those secrets
-    igSecret.grantRead(worker.role!);
-    openAiSecret.grantRead(worker.role!);
+    // igSecret.grantRead(worker.role!);
+
+    worker.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:UpdateSecretVersionStage",
+        ],
+        resources: ["*"],
+      })
+    );
+    // openAiSecret.grantRead(worker.role!);
+
+    new cdk.CfnOutput(this, "IGSECRETARN", {
+      value: igSecret.secretArn,
+    });
+    new cdk.CfnOutput(this, "AIARN", {
+      value: openAiSecret.secretArn,
+    });
 
     // SES send email permissions
     worker.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["ses:SendEmail", "ses:SendRawEmail"],
-        resources: ["*"], //TODO this is a bit generous?
+        resources: ["*"], //TODO this is a bit generous
       })
     );
 
     // EventBridge rule -> Lambda target
     const rule = new events.Rule(this, "WeeklyRule", {
-      schedule: scheduleCron,
+      schedule: insightsCron,
       ruleName: "PieWeeklyInsightRule",
       description: "Run weekly summary for social performance",
     });
@@ -75,9 +96,19 @@ export class PieGuysSocialsStack extends cdk.Stack {
       }
     );
 
-    // enable lambda to refresh the IG token
-    igSecret.grantRead(refreshLambda);
-    igSecret.grantWrite(refreshLambda);
+    refreshLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:UpdateSecretVersionStage",
+        ],
+        resources: ["*"],
+      })
+    );
 
     // enable secrets manager to invoke lamba
     refreshLambda.addPermission("AllowSecretsManagerInvoke", {

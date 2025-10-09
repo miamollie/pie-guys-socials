@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
@@ -70,6 +69,7 @@ async function createSecret(secretId: string, token: string) {
     currentSecret.SecretString || "{}"
   );
 
+  //todo move to env
   const refreshUrl = new URL(
     "https://graph.instagram.com/refresh_access_token"
   );
@@ -129,7 +129,7 @@ async function testSecret(secretId: string, token: string) {
   if (!response.ok)
     throw new Error(`Token test failed: ${response.statusText}`);
 
-  const data = await response.json() as {id: string};
+  const data = (await response.json()) as { id: string };
   if (!data.id) throw new Error("Token validation failed: no user ID");
   console.log(`✅ Token valid for Instagram user`);
 }
