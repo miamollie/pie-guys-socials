@@ -69,7 +69,7 @@ async function createSecret(secretId: string, token: string) {
     currentSecret.SecretString || "{}"
   );
 
-  //todo move to env
+  // TODO move to env
   const refreshUrl = new URL(
     "https://graph.instagram.com/refresh_access_token"
   );

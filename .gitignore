@@ -10,3 +10,5 @@ cdk.out
 # shhh
 
 .env
+
+.aws-sam

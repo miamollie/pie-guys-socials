@@ -1,0 +1,11 @@
+{
+    "WeeklyInsightWorker": {
+        "AWS_REGION": "eu-west-1",
+        "AWS_ACCOUNT": "424795685451",
+        "TO_EMAIL": "miamollie@gmail.com",
+        "FROM_EMAIL": "miamollie@gmail.com",
+        "IG_SECRET_NAME": "INSTAGRAM_SECRET_KEY",
+        "OPEN_AI_SECRET_NAME": "OPEN_AI_SECRET_KEY",
+        "IG_BUSINESS_ID": "?"
+    }
+}

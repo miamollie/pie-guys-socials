@@ -39,14 +39,12 @@ export class PieGuysSocialsStack extends cdk.Stack {
       environment: {
         IG_SECRET_NAME: igSecret.secretName,
         OPEN_AI_SECRET_NAME: openAiSecret.secretName,
+        IG_BUSINESS_ID: process.env.IG_BUSINESS_ID!,
         FROM_EMAIL: process.env.FROM_EMAIL!,
         TO_EMAIL: process.env.TO_EMAIL!,
         REGION: this.region,
       },
     });
-
-    // Allow Lambda to read those secrets
-    // igSecret.grantRead(worker.role!);
 
     worker.addToRolePolicy(
       new iam.PolicyStatement({
@@ -61,14 +59,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
         resources: ["*"],
       })
     );
-    // openAiSecret.grantRead(worker.role!);
-
-    new cdk.CfnOutput(this, "IGSECRETARN", {
-      value: igSecret.secretArn,
-    });
-    new cdk.CfnOutput(this, "AIARN", {
-      value: openAiSecret.secretArn,
-    });
 
     // SES send email permissions
     worker.addToRolePolicy(
