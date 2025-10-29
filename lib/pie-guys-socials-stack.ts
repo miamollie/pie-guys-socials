@@ -10,15 +10,9 @@ export class PieGuysSocialsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // ********** Configuration (adjust as needed) **********
     const insightsCron = events.Schedule.expression("cron(0 17 ? * FRI *)");
-    // This triggers every Friday at 17:00 UTC (adjust if you want strict Europe/Dublin handling)
-    // *******************************************************
+    // This triggers every Friday at 17:00 UTC
 
-    // Secrets (create in console or via CDK separately) - we reference existing secrets by name/ARN
-    // Expect these secrets to exist:
-    // - IG_SECRET_NAME (contains the Instagram Graph API token)
-    // - OPEN_AI_SECRET_NAME (or LLM provider key)
     const igSecret = secrets.Secret.fromSecretNameV2(
       this,
       "IgTokenSecret",
@@ -56,7 +50,7 @@ export class PieGuysSocialsStack extends cdk.Stack {
           "secretsmanager:UpdateSecret",
           "secretsmanager:UpdateSecretVersionStage",
         ],
-        resources: ["*"],
+        resources: ["*"], //TODO this is too greedy
       })
     );
 
@@ -96,20 +90,14 @@ export class PieGuysSocialsStack extends cdk.Stack {
           "secretsmanager:UpdateSecret",
           "secretsmanager:UpdateSecretVersionStage",
         ],
-        resources: ["*"],
+        resources: ["*"], //TODO this is a bit generous
       })
     );
 
-    // enable secrets manager to invoke lamba
+    // Enable secrets manager to invoke lamba
     refreshLambda.addPermission("AllowSecretsManagerInvoke", {
       principal: new iam.ServicePrincipal("secretsmanager.amazonaws.com"),
       action: "lambda:InvokeFunction",
     });
-
-    // Outputs
-    new cdk.CfnOutput(this, "LambdaFunctionName", {
-      value: worker.functionName,
-    });
-    new cdk.CfnOutput(this, "EventRuleName", { value: rule.ruleName });
   }
 }

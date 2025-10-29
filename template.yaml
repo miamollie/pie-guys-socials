@@ -44,7 +44,7 @@ Resources:
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: c7c7faa399c67de0c2b240ad37713d6815e9add1b1381206cdeb645a90dcfcdd.zip
+        S3Key: b9e72e62b4570a1b91c94dd1aee9b6a30266e2a6c8a82cc2a4bd7a6bdafa788c.zip
       Environment:
         Variables:
           REGION:
@@ -63,7 +63,7 @@ Resources:
       - WeeklyInsightWorkerServiceRoleFDF0BE2F
     Metadata:
       aws:cdk:path: PieGuysSocialsStack/WeeklyInsightWorker/Resource
-      aws:asset:path: /Users/miamollie/Projects/Personal/pie-guys-socials/cdk.out/asset.c7c7faa399c67de0c2b240ad37713d6815e9add1b1381206cdeb645a90dcfcdd
+      aws:asset:path: /Users/miamollie/Projects/Personal/pie-guys-socials/cdk.out/asset.b9e72e62b4570a1b91c94dd1aee9b6a30266e2a6c8a82cc2a4bd7a6bdafa788c
       aws:asset:is-bundled: true
       aws:asset:property: Code
   WeeklyRule98BC7A78:

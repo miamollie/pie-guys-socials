@@ -1,23 +1,14 @@
-import OpenAI from "openai";
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
 import { EmailClient } from "../email";
 import { prompts } from "./prompts";
 import { LLMClient } from "../llmClient";
 
 export class RecommendationClient {
   // --- Private fields ---
-  private readonly secretsClient: SecretsManagerClient;
   private readonly emailClient: EmailClient;
   private LLMClient: LLMClient;
 
   // --- Constructor ---
   constructor() {
-    this.secretsClient = new SecretsManagerClient({
-      region: process.env.AWS_REGION || "eu-west-1",
-    });
     this.LLMClient = new LLMClient();
     this.emailClient = new EmailClient();
   }

@@ -1,7 +1,7 @@
 import { InstagramClient } from "./clients/insta";
 import { RecommendationClient } from "./clients/recommendation";
 
-function init() {
+const { igClient, recsClient } = (function init() {
   const igClient = new InstagramClient();
   const recsClient = new RecommendationClient();
 
@@ -9,10 +9,9 @@ function init() {
     igClient,
     recsClient,
   };
-}
+})();
 
 export const handler = async (): Promise<any> => {
-  const { igClient, recsClient } = init();
   try {
     // Get IG insights
     const igInsights = await igClient.getInsights();

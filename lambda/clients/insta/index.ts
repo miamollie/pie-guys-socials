@@ -2,6 +2,7 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
 } from "@aws-sdk/client-secrets-manager";
+import { SecretsClient } from "../secrets";
 
 export class InstagramClient {
   // --- private Constants ---
@@ -12,12 +13,10 @@ export class InstagramClient {
 
   // --- Private fields ---
   private token: string | null = null;
-  private readonly secretsClient: SecretsManagerClient;
+  private readonly secretsClient: SecretsClient;
 
   constructor() {
-    this.secretsClient = new SecretsManagerClient({
-      region: process.env.AWS_REGION || "eu-west-1",
-    });
+    this.secretsClient = new SecretsClient();
   }
 
   // --- Initialize client: fetch and cache IG access token ---
@@ -25,20 +24,16 @@ export class InstagramClient {
     if (this.token) return; // Already cached
 
     try {
-      const result = await this.secretsClient.send(
-        new GetSecretValueCommand({ SecretId: InstagramClient.SECRET_NAME })
+      const token = await this.secretsClient.getSecretValue(
+        InstagramClient.SECRET_NAME
       );
-      if (!result.SecretString)
-        throw new Error(`Secret ${InstagramClient.SECRET_NAME} has no value`);
 
-      const parsed = JSON.parse(result.SecretString);
-      this.token =
-        parsed.access_token || parsed.current_access_token || parsed.key;
-
-      if (!this.token)
+      if (!token)
         throw new Error(
           `No access token found in ${InstagramClient.SECRET_NAME}`
         );
+
+      this.token = token;
     } catch (err) {
       console.error("❌ Failed to fetch IG token:", err);
       throw new Error("Could not initialize Instagram access token");
@@ -87,5 +82,61 @@ export class InstagramClient {
       console.error("❌ Error fetching IG insights:", err);
       throw err;
     }
+  }
+
+  public async refreshToken(): Promise<{
+    access_token: string;
+  }> {
+    await this.initToken();
+
+    const refreshUrl = new URL(
+      `${InstagramClient.IG_BASE_URL}/refresh_access_token`
+    );
+    refreshUrl.searchParams.set("grant_type", "ig_refresh_token");
+    refreshUrl.searchParams.set("access_token", this.token!); // init token ensures not null
+
+    const response = await fetch(refreshUrl.toString());
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Failed to refresh IG token: ${response.status} - ${text}`
+      );
+    }
+
+    const data = (await response.json()) as {
+      access_token: string;
+      expires_in: number;
+    };
+
+    console.log(
+      `✅ Token refreshed, valid for ${data.expires_in / 86400} days`
+    );
+
+    // need to rename thiese
+    this.token = data.access_token;
+    return data;
+  }
+
+  async testAccess(): Promise<void> {
+    const testUrl = new URL(`${InstagramClient.IG_BASE_URL}/me`);
+    testUrl.searchParams.set("fields", "id");
+    testUrl.searchParams.set("access_token", this.token!);
+
+    const response = await fetch(testUrl.toString());
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(
+        `Token test failed: ${response.status} ${response.statusText} - ${errText}`
+      );
+    }
+
+    const data = (await response.json()) as { id?: string };
+
+    if (!data.id) {
+      throw new Error("Token validation failed: missing or null user ID");
+    }
+
+    console.log(`✅ Instagram token valid for user ID: ${data.id}`);
   }
 }

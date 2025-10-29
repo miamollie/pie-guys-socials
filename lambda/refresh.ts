@@ -1,12 +1,8 @@
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-  PutSecretValueCommand,
-  UpdateSecretVersionStageCommand,
-  DescribeSecretCommand,
-} from "@aws-sdk/client-secrets-manager";
+import { InstagramClient } from "./clients/insta";
+import { SecretsClient } from "./clients/secrets";
 
-const client = new SecretsManagerClient({ region: process.env.AWS_REGION });
+const secretclient = new SecretsClient();
+const igclient = new InstagramClient();
 
 /**
  * Secrets Manager rotation Lambda for Instagram Graph long-lived tokens
@@ -19,20 +15,21 @@ export const handler = async (event: any) => {
   const token = event.ClientRequestToken;
   const step = event.Step;
 
-  // --- Validation -----------------------------------------------------------
-  const metadata = await client.send(
-    new DescribeSecretCommand({ SecretId: secretId })
-  );
-  const versions = metadata.VersionIdsToStages || {};
-  if (!(token in versions))
-    throw new Error(`Secret version ${token} not found`);
-  if (versions[token].includes("AWSCURRENT")) {
-    console.log("Secret version already current — skipping rotation.");
-    return;
-  }
-  if (!versions[token].includes("AWSPENDING")) {
-    throw new Error(`Secret version ${token} not set as AWSPENDING`);
-  }
+  // todo figure out validation
+  // // --- Validation -----------------------------------------------------------
+  // const metadata = await client.send(
+  //   new DescribeSecretCommand({ SecretId: secretId })
+  // );
+  // const versions = metadata.VersionIdsToStages || {};
+  // if (!(token in versions))
+  //   throw new Error(`Secret version ${token} not found`);
+  // if (versions[token].includes("AWSCURRENT")) {
+  //   console.log("Secret version already current — skipping rotation.");
+  //   return;
+  // }
+  // if (!versions[token].includes("AWSPENDING")) {
+  //   throw new Error(`Secret version ${token} not set as AWSPENDING`);
+  // }
 
   // --- Step Routing ---------------------------------------------------------
   switch (step) {
@@ -43,7 +40,7 @@ export const handler = async (event: any) => {
       await setSecret(secretId, token);
       break;
     case "testSecret":
-      await testSecret(secretId, token);
+      await testSecret(secretId);
       break;
     case "finishSecret":
       await finishSecret(secretId, token);
@@ -57,50 +54,10 @@ export const handler = async (event: any) => {
 // Step 1: Create new secret (refresh token)
 // ---------------------------------------------------------------------------
 async function createSecret(secretId: string, token: string) {
-  console.log("🔄 Creating new secret version...");
-
-  const currentSecret = await client.send(
-    new GetSecretValueCommand({
-      SecretId: secretId,
-      VersionStage: "AWSCURRENT",
-    })
-  );
-  const { current_access_token } = JSON.parse(
-    currentSecret.SecretString || "{}"
-  );
-
-  // TODO move to env
-  const refreshUrl = new URL(
-    "https://graph.instagram.com/refresh_access_token"
-  );
-  refreshUrl.searchParams.set("grant_type", "ig_refresh_token");
-  refreshUrl.searchParams.set("access_token", current_access_token);
-
-  const response = await fetch(refreshUrl.toString());
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to refresh IG token: ${response.status} - ${text}`);
-  }
-
-  interface IGTOKEN {
-    access_token: string;
-    expires_in: number;
-  }
-  const data = (await response.json()) as IGTOKEN;
-  console.log(`✅ Refreshed token valid for ${data.expires_in / 86400} days`);
-
-  await client.send(
-    new PutSecretValueCommand({
-      SecretId: secretId,
-      ClientRequestToken: token,
-      SecretString: JSON.stringify({
-        access_token: data.access_token,
-        expires_in: data.expires_in,
-        refreshed_at: new Date().toISOString(),
-      }),
-      VersionStages: ["AWSPENDING"],
-    })
-  );
+  const data = await igclient.refreshToken();
+  // todo validate response
+  await secretclient.putSecretValue(secretId, token, data);
+  //
 }
 
 // ---------------------------------------------------------------------------
@@ -113,24 +70,12 @@ async function setSecret(secretId: string, token: string) {
 // ---------------------------------------------------------------------------
 // Step 3: Test the new secret version
 // ---------------------------------------------------------------------------
-async function testSecret(secretId: string, token: string) {
+async function testSecret(secretId: string) {
   console.log(`🧪 Testing secret version for ${secretId}`);
+  // refreshToken updates client cache and secret manager so it's not necessary to fetch the secret again
 
-  const pendingSecret = await client.send(
-    new GetSecretValueCommand({ SecretId: secretId, VersionId: token })
-  );
-  const { access_token } = JSON.parse(pendingSecret.SecretString || "{}");
+  const data = await igclient.testAccess();
 
-  const testUrl = new URL("https://graph.instagram.com/me");
-  testUrl.searchParams.set("fields", "id");
-  testUrl.searchParams.set("access_token", access_token);
-
-  const response = await fetch(testUrl.toString());
-  if (!response.ok)
-    throw new Error(`Token test failed: ${response.statusText}`);
-
-  const data = (await response.json()) as { id: string };
-  if (!data.id) throw new Error("Token validation failed: no user ID");
   console.log(`✅ Token valid for Instagram user`);
 }
 
@@ -140,21 +85,7 @@ async function testSecret(secretId: string, token: string) {
 async function finishSecret(secretId: string, token: string) {
   console.log("🎉 Finishing rotation and promoting new version...");
 
-  const describe = await client.send(
-    new DescribeSecretCommand({ SecretId: secretId })
-  );
-  const currentVersion = Object.entries(describe.VersionIdsToStages || {}).find(
-    ([, stages]) => (stages as string[]).includes("AWSCURRENT")
-  )?.[0];
-
-  await client.send(
-    new UpdateSecretVersionStageCommand({
-      SecretId: secretId,
-      VersionStage: "AWSCURRENT",
-      MoveToVersionId: token,
-      RemoveFromVersionId: currentVersion,
-    })
-  );
+  await secretclient.promotePendingVersion(secretId, token);
 
   console.log(`✅ Rotation complete for ${secretId}`);
 }

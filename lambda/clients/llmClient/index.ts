@@ -1,8 +1,5 @@
 import OpenAI from "openai";
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
+import { SecretsClient } from "../secrets";
 
 interface LLMInput {
   system: string;
@@ -11,35 +8,27 @@ interface LLMInput {
 
 export class LLMClient {
   // --- Private fields ---
-  private readonly secretsClient: SecretsManagerClient;
+  private readonly secretsClient: SecretsClient;
   private openAIClient: OpenAI;
-  private apiKey: string | null = null;
-  private model: "gpt-4";
-  private SECRET_NAME: "OPEN_AI_SECRET_KEY";
+  private static model: "gpt-4";
+  private static SECRET_NAME: "OPEN_AI_SECRET_KEY";
 
   constructor() {
-    this.secretsClient = new SecretsManagerClient({
-      region: process.env.AWS_REGION || "eu-west-1",
-    });
+    this.secretsClient = new SecretsClient();
   }
 
   private async initClient() {
     if (this.openAIClient) return; // Already cached
 
     try {
-      const result = await this.secretsClient.send(
-        new GetSecretValueCommand({ SecretId: this.SECRET_NAME })
+      const key = await this.secretsClient.getSecretValue(
+        LLMClient.SECRET_NAME
       );
-      if (!result.SecretString)
-        throw new Error(`Secret ${this.SECRET_NAME} has no value`);
 
-      const parsed = JSON.parse(result.SecretString);
-      this.apiKey = parsed.api_key || parsed.key || parsed.OPENAI_API_KEY;
+      if (!key)
+        throw new Error(`No OpenAI API key found in ${LLMClient.SECRET_NAME}`);
 
-      if (!this.apiKey)
-        throw new Error(`No OpenAI API key found in ${this.SECRET_NAME}`);
-
-      this.openAIClient = new OpenAI({ apiKey: this.apiKey });
+      this.openAIClient = new OpenAI({ apiKey: key });
     } catch (err) {
       console.error("❌ Failed to initialize OpenAI client:", err);
       throw new Error("Could not initialize RecommendationClient");
@@ -51,7 +40,7 @@ export class LLMClient {
 
     try {
       const response = await this.openAIClient.responses.create({
-        model: this.model,
+        model: LLMClient.model,
         instructions: input.system,
         input: input.prompt,
       });
