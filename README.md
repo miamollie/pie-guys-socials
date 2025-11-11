@@ -82,3 +82,64 @@ Iterative approach:
 Iteration 1: Email-only summaries, manual posting.
 
 Later: Draft post suggestions, possible auto-scheduling.
+
+
+
+
+### Notes on access tokens
+
+GET https://graph.instagram.com/access_token
+  ?grant_type=ig_exchange_token
+  &client_secret=<INSTAGRAM_APP_SECRET>
+  &access_token=<VALID_SHORT_LIVED_ACCESS_TOKEN>
+
+
+App access tokens are used to make requests to Facebook APIs on behalf of an app rather than a user. This can be used to modify the parameters of your app, create and manage test users, or read your app's insights.
+
+Your App ID
+Your App Secret
+
+```
+  curl -X GET "https://graph.facebook.com/oauth/access_token
+  ?client_id={your-app-id}
+  &client_secret={your-app-secret}
+  &grant_type=client_credentials"
+  ```
+
+
+  There is another method to make calls to the Graph API that doesn't require using a generated app access token. You can just pass your app ID and app secret as the access_token parameter when you make a call:
+  what?!
+
+  app id: 1352039616503788
+  app secrect:
+
+
+
+  https://developers.facebook.com/docs/instagram-platform/insights
+
+
+  if you use instagram with FB login, then use the fb graph base
+
+  insights endpoint requires user access token: 
+
+  	
+A User access token is used if your app takes actions in real time, based on input from the user. This kind of access token is needed any time the app calls an API to read, modify or write a specific person's Facebook data on their behalf. A User access tokens is generally obtained via a login dialog and requires a person to permit your app to obtain one.
+
+
+Exchange access token requires ???
+
+
+ App IDs: Apps that use Facebook Login for Business will use the Meta app ID displayed at the top of the Meta App Dashboard for your app
+
+
+ https://developers.facebook.com/tools/accesstoken
+ https://developers.facebook.com/tools/debug/accesstoken
+
+ Insighyd API can get for a userID or for a media
+
+ So lambda can call first for the user in the past week, then for each media posted that week
+
+ Instagram media ID? How to get..
+ Instagram account ID? 2178730279
+
+ business id? || "1104480968021448"

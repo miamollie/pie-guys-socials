@@ -1,17 +1,11 @@
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
 import { SecretsClient } from "../secrets";
 
 export class InstagramClient {
-  // --- private Constants ---
   private static readonly SECRET_NAME = "INSTAGRAM_SECRET_KEY"; // Replace or inject via env
-  private static readonly IG_BUSINESS_ID = process.env.IG_BUSINESS_ID; // Replace or inject via env
-  private static readonly GRAPH_API_VERSION = "v16.0";
+  private static readonly IG_BUSINESS_ID = process.env.IG_BUSINESS_ID;
+  private static readonly GRAPH_API_VERSION = "v23.0";
   private static readonly IG_BASE_URL = `https://graph.facebook.com/${this.GRAPH_API_VERSION}`;
 
-  // --- Private fields ---
   private token: string | null = null;
   private readonly secretsClient: SecretsClient;
 
@@ -20,6 +14,8 @@ export class InstagramClient {
   }
 
   // --- Initialize client: fetch and cache IG access token ---
+  // could be stale if token is rotated while lambda is hot
+  // but that's fine because the invocations rate is so slow, these lambdas will always cold start
   private async initToken(): Promise<void> {
     if (this.token) return; // Already cached
 

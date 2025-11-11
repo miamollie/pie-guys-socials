@@ -37,7 +37,7 @@ export const handler = async (event: any) => {
       await createSecret(secretId, token);
       break;
     case "setSecret":
-      await setSecret(secretId, token);
+      await setSecret(secretId);
       break;
     case "testSecret":
       await testSecret(secretId);
@@ -55,7 +55,6 @@ export const handler = async (event: any) => {
 // ---------------------------------------------------------------------------
 async function createSecret(secretId: string, token: string) {
   const data = await igclient.refreshToken();
-  // todo validate response
   await secretclient.putSecretValue(secretId, token, data);
   //
 }
@@ -63,7 +62,7 @@ async function createSecret(secretId: string, token: string) {
 // ---------------------------------------------------------------------------
 // Step 2: (Optional) Configure secret if needed
 // ---------------------------------------------------------------------------
-async function setSecret(secretId: string, token: string) {
+async function setSecret(secretId: string) {
   console.log(`SetSecret: No configuration required for ${secretId}`);
 }
 
@@ -74,7 +73,7 @@ async function testSecret(secretId: string) {
   console.log(`🧪 Testing secret version for ${secretId}`);
   // refreshToken updates client cache and secret manager so it's not necessary to fetch the secret again
 
-  const data = await igclient.testAccess();
+  await igclient.testAccess();
 
   console.log(`✅ Token valid for Instagram user`);
 }
