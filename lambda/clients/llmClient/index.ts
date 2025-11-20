@@ -31,12 +31,12 @@ export class LLMClient {
       this.openAIClient = new OpenAI({ apiKey: key });
     } catch (err) {
       console.error("❌ Failed to initialize OpenAI client:", err);
-      throw new Error("Could not initialize RecommendationClient");
+      throw new Error("Could not initialize LLMClient");
     }
   }
 
   async get(input: LLMInput) {
-    this.initClient();
+    await this.initClient();
 
     try {
       const response = await this.openAIClient.responses.create({
@@ -50,7 +50,7 @@ export class LLMClient {
         throw new Error(`OpenAI request failed: ${msg}`);
       }
 
-      if (!response.output_text)
+      if (!response.output_text.length)
         throw new Error(`OpenAI request failed: no recommendation returned`);
 
       return response.output_text;

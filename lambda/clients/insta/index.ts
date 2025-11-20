@@ -1,4 +1,5 @@
 import { SecretsClient } from "../secrets";
+import { data } from "./stubs";
 
 export class InstagramClient {
   private static readonly SECRET_NAME = "INSTAGRAM_SECRET_KEY"; // Replace or inject via env
@@ -51,6 +52,10 @@ export class InstagramClient {
     return response.json();
   }
 
+  public getStubInsights() {
+    return data;
+  }
+
   public async getInsights(days: number = 7): Promise<any> {
     await this.initToken();
 
@@ -70,10 +75,14 @@ export class InstagramClient {
     url.searchParams.set("until", until);
     url.searchParams.set("access_token", this.token!);
 
+    // first get the most recent media
+    // then get insights for those media IDs
+    // in future, also compare profile ID insights result variation over time (have the account level insights improved or not)
+
     try {
       const data = await this.request(url.toString());
       console.log(`✅ IG insights fetched (${data.data?.length || 0} posts)`);
-      return data;
+      return JSON.stringify(data);
     } catch (err) {
       console.error("❌ Error fetching IG insights:", err);
       throw err;

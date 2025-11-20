@@ -1,19 +1,19 @@
 import { InstagramClient } from "./clients/insta";
 import { RecommendationClient } from "./clients/recommendation";
+import { EmailClient } from "./clients/email";
+import { LLMClient } from "./clients/llmClient";
 
 const igClient = new InstagramClient();
-const recsClient = new RecommendationClient();
+const recsClient = new RecommendationClient(new LLMClient(), new EmailClient());
 
 export const handler = async (): Promise<any> => {
   try {
     // Get IG insights
-    const igInsights = await igClient.getInsights();
-    console.log(igInsights);
+    const igInsights = igClient.getStubInsights();
+    // console.log(igInsights);
 
     // Ask LLM for weekly analysis and suggestions
-    const aiReccomendations = await recsClient.getRecommendation(
-      JSON.stringify(igInsights)
-    );
+    const aiReccomendations = await recsClient.getRecommendation(igInsights);
 
     // Send email with recommendations
     await recsClient.sendRecommendation(aiReccomendations);

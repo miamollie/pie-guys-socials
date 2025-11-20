@@ -71,7 +71,6 @@ async function setSecret(secretId: string) {
 // ---------------------------------------------------------------------------
 async function testSecret(secretId: string) {
   console.log(`🧪 Testing secret version for ${secretId}`);
-  // refreshToken updates client cache and secret manager so it's not necessary to fetch the secret again
 
   await igclient.testAccess();
 

@@ -8,9 +8,9 @@ export class RecommendationClient {
   private LLMClient: LLMClient;
 
   // --- Constructor ---
-  constructor() {
-    this.LLMClient = new LLMClient();
-    this.emailClient = new EmailClient();
+  constructor(llm: LLMClient, email: EmailClient) {
+    this.LLMClient = llm;
+    this.emailClient = email;
   }
 
   public async getRecommendation(igInsights: any): Promise<string> {

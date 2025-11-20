@@ -1,0 +1,274 @@
+Resources:
+  WeeklyInsightWorkerServiceRoleFDF0BE2F:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/WeeklyInsightWorker/ServiceRole/Resource
+  WeeklyInsightWorkerServiceRoleDefaultPolicyB2E09B70:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - secretsmanager:DescribeSecret
+              - secretsmanager:GetSecretValue
+              - secretsmanager:PutSecretValue
+              - secretsmanager:UpdateSecret
+              - secretsmanager:UpdateSecretVersionStage
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: WeeklyInsightWorkerServiceRoleDefaultPolicyB2E09B70
+      Roles:
+        - Ref: WeeklyInsightWorkerServiceRoleFDF0BE2F
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/WeeklyInsightWorker/ServiceRole/DefaultPolicy/Resource
+  WeeklyInsightWorkerD8409CF9:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 5b835ea63f7013a53b81f4f5059e7513a74186c9a806e894ff8b8233c92409af.zip
+      Environment:
+        Variables:
+          REGION:
+            Ref: AWS::Region
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      Handler: index.handler
+      MemorySize: 1024
+      Role:
+        Fn::GetAtt:
+          - WeeklyInsightWorkerServiceRoleFDF0BE2F
+          - Arn
+      Runtime: nodejs18.x
+      Timeout: 120
+    DependsOn:
+      - WeeklyInsightWorkerServiceRoleDefaultPolicyB2E09B70
+      - WeeklyInsightWorkerServiceRoleFDF0BE2F
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/WeeklyInsightWorker/Resource
+      aws:asset:path: /Users/miamollie/Projects/Personal/pie-guys-socials/cdk.out/asset.5b835ea63f7013a53b81f4f5059e7513a74186c9a806e894ff8b8233c92409af
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  WeeklyRule98BC7A78:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Run weekly summary for social performance
+      Name: PieWeeklyInsightRule
+      ScheduleExpression: cron(0 17 ? * FRI *)
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - WeeklyInsightWorkerD8409CF9
+              - Arn
+          Id: Target0
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/WeeklyRule/Resource
+  WeeklyRuleAllowEventRulePieGuysSocialsStackWeeklyInsightWorkerD572C6CB8BB282F6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - WeeklyInsightWorkerD8409CF9
+          - Arn
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - WeeklyRule98BC7A78
+          - Arn
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/WeeklyRule/AllowEventRulePieGuysSocialsStackWeeklyInsightWorkerD572C6CB
+  RefreshIgTokenLambdaServiceRole9248AF59:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/RefreshIgTokenLambda/ServiceRole/Resource
+  RefreshIgTokenLambdaServiceRoleDefaultPolicyA0156874:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - secretsmanager:DescribeSecret
+              - secretsmanager:GetSecretValue
+              - secretsmanager:PutSecretValue
+              - secretsmanager:UpdateSecret
+              - secretsmanager:UpdateSecretVersionStage
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: RefreshIgTokenLambdaServiceRoleDefaultPolicyA0156874
+      Roles:
+        - Ref: RefreshIgTokenLambdaServiceRole9248AF59
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/RefreshIgTokenLambda/ServiceRole/DefaultPolicy/Resource
+  RefreshIgTokenLambda33736FAF:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: dc26957bf491fba089ba4420dac3cdc0842e2c65941c17c2945873985aacf5d3.zip
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - RefreshIgTokenLambdaServiceRole9248AF59
+          - Arn
+      Runtime: nodejs18.x
+    DependsOn:
+      - RefreshIgTokenLambdaServiceRoleDefaultPolicyA0156874
+      - RefreshIgTokenLambdaServiceRole9248AF59
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/RefreshIgTokenLambda/Resource
+      aws:asset:path: /Users/miamollie/Projects/Personal/pie-guys-socials/cdk.out/asset.dc26957bf491fba089ba4420dac3cdc0842e2c65941c17c2945873985aacf5d3
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  RefreshIgTokenLambdaAllowSecretsManagerInvoke36C39C52:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - RefreshIgTokenLambda33736FAF
+          - Arn
+      Principal: secretsmanager.amazonaws.com
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/RefreshIgTokenLambda/AllowSecretsManagerInvoke
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/z2PwQ6CMBBEv8V7WUVj4lVMPBqDH0BKWckCbRO2xZiGf7cU9fR2upnp7B7y/Ai7jXxxppo+G6iG8HBS9aJEtn5UKOKuCoPUdSMrYxvsGG4JV2+UI2sESQ2htAOKy9Mk3u1A6r3IdZoFHyrJjI7hvCBqKLzq0RWSUazxEKLhn7qYcdTEHNUscEIT3aH0338i51mktNi4JdOm51/tOF+sacgl91IcOt5O+QnSxR0TZaM3jjRCufIDfVKQkw4BAAA=
+    Metadata:
+      aws:cdk:path: PieGuysSocialsStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+
