@@ -12,7 +12,7 @@ The pipeline is built using **AWS CDK (TypeScript)**, **Lambda**, and **EventBri
 - Email a weekly summary (suggesting next posts).
 - Keep Instagram API tokens refreshed automatically.
 
-This replaces the need for a third-party social media agency (~€300/month) with a lean, low-maintenance AI-driven workflow.
+This replaces the need for a third-party social media agency with a lean, low-maintenance AI-driven workflow.
 
 ---
 
@@ -38,7 +38,7 @@ AWS Secrets Manager
 - **AWS Lambda**
 
   - `refreshLambda`: refreshes IG long-lived access token.
-  - `summaryLambda`: pulls IG data, processes with LLM, emails summary (future).
+  - `summaryLambda`: pulls IG data, processes with LLM, emails summary.
 
 - **EventBridge**
 
@@ -52,22 +52,24 @@ AWS Secrets Manager
 
 ## ⚡ Useful Commands
 
-### Install Dependencies
 
 ```bash
 npm install
 Deploy CDK Stack
 Using .env for local configuration:
 
-bash
-Copy code
-npm run cdk:deploy
-Other CDK Commands
-bash
-Copy code
+
+npm run cdk:deploy # deploy
+
+
 npm run cdk:synth   # synthesize CloudFormation template
 npm run cdk:diff    # compare with deployed stack
 ```
+
+## Testing
+
+e2e tests using SAM CLI
+Unit tests using Jest
 
 ## 📝 Decisions & Tradeoffs
 
