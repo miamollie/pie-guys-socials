@@ -57,6 +57,6 @@ describe("LLMClient", () => {
     const client = new LLMClient();
     await expect(
       client.get({ system: "test", prompt: "test" })
-    ).rejects.toThrow("no recommendation returned");
+    ).rejects.toThrow("OpenAI request failed: no recommendation returned");
   });
 });
