@@ -1,12 +1,14 @@
 import OpenAI from "openai";
 import { SecretsClient } from "../secrets";
+import { StubbedLLMClient } from "./stubbed";
+import { ILLMClient } from "../interfaces";
 
 interface LLMInput {
   system: string;
   prompt: string;
 }
 
-export class LLMClient {
+export class LLMClient implements ILLMClient {
   // --- Private fields ---
   private readonly secretsClient: SecretsClient;
   private openAIClient: OpenAI;
@@ -60,4 +62,19 @@ export class LLMClient {
       throw err;
     }
   }
+}
+
+/**
+ * Factory function to create LLM client based on environment
+ */
+export function createLLMClient(): ILLMClient {
+  const useStub = process.env.USE_STUB_LLM === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed LLM client");
+    return new StubbedLLMClient();
+  }
+  
+  console.log("🤖 Using real LLM client (OpenAI)");
+  return new LLMClient();
 }

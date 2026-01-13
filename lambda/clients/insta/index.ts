@@ -1,7 +1,9 @@
 import { SecretsClient } from "../secrets";
 import { data } from "./stubs";
+import { StubbedInstagramClient } from "./stubbed";
+import { IInstagramClient } from "../interfaces";
 
-export class InstagramClient {
+export class InstagramClient implements IInstagramClient {
   private static readonly SECRET_NAME =
     process.env.IG_SECRET_NAME || "INSTAGRAM_SECRET_KEY";
   private static readonly IG_BUSINESS_ID = process.env.IG_BUSINESS_ID;
@@ -145,4 +147,19 @@ export class InstagramClient {
 
     console.log(`✅ Instagram token valid for user ID: ${data.id}`);
   }
+}
+
+/**
+ * Factory function to create Instagram client based on environment
+ */
+export function createInstagramClient(): IInstagramClient {
+  const useStub = process.env.USE_STUB_IG === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed Instagram client");
+    return new StubbedInstagramClient();
+  }
+  
+  console.log("🌐 Using real Instagram client");
+  return new InstagramClient();
 }

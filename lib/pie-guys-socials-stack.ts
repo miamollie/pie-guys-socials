@@ -38,6 +38,10 @@ export class PieGuysSocialsStack extends cdk.Stack {
         TO_EMAIL: process.env.TO_EMAIL!,
         AWS_REGION: this.region,
         REGION: this.region,
+        // Stub mode flags - set to "true" to use stubbed clients
+        USE_STUB_IG: process.env.USE_STUB_IG || "false",
+        USE_STUB_EMAIL: process.env.USE_STUB_EMAIL || "false",
+        USE_STUB_LLM: process.env.USE_STUB_LLM || "false",
       },
     });
 
@@ -78,6 +82,10 @@ export class PieGuysSocialsStack extends cdk.Stack {
       {
         entry: `${__dirname}/../lambda/refresh.ts`,
         handler: "handler",
+        environment: {
+          USE_STUB_IG: process.env.USE_STUB_IG || "false",
+          AWS_REGION: this.region,
+        },
       }
     );
 
