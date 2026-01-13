@@ -5,18 +5,18 @@ import { LLMClient } from "../llmClient";
 export class RecommendationClient {
   // --- Private fields ---
   private readonly emailClient: EmailClient;
-  private LLMClient: LLMClient;
+  private readonly llmClient: LLMClient;
 
   // --- Constructor ---
   constructor(llm: LLMClient, email: EmailClient) {
-    this.LLMClient = llm;
+    this.llmClient = llm;
     this.emailClient = email;
   }
 
   public async getRecommendation(igInsights: any): Promise<string> {
     const insightsJson = JSON.stringify(igInsights || [], null, 2);
 
-    return await this.LLMClient.get({
+    return await this.llmClient.get({
       system: prompts.system,
       prompt: prompts.user(insightsJson),
     });

@@ -13,10 +13,10 @@ export const handler = async (): Promise<any> => {
     // console.log(igInsights);
 
     // Ask LLM for weekly analysis and suggestions
-    const aiReccomendations = await recsClient.getRecommendation(igInsights);
+    const aiRecommendations = await recsClient.getRecommendation(igInsights);
 
     // Send email with recommendations
-    await recsClient.sendRecommendation(aiReccomendations);
+    await recsClient.sendRecommendation(aiRecommendations);
 
     return { status: "ok" };
   } catch (err) {
