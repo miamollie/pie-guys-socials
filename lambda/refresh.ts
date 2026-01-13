@@ -56,7 +56,6 @@ export const handler = async (event: any) => {
 async function createSecret(secretId: string, token: string) {
   const data = await igclient.refreshToken();
   await secretclient.putSecretValue(secretId, token, data);
-  //
 }
 
 // ---------------------------------------------------------------------------

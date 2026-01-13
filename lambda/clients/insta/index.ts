@@ -117,7 +117,7 @@ export class InstagramClient {
       `✅ Token refreshed, valid for ${data.expires_in / 86400} days`
     );
 
-    // need to rename thiese
+    // Update cached token with refreshed value
     this.token = data.access_token;
     return data;
   }
