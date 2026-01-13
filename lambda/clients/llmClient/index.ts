@@ -10,8 +10,8 @@ export class LLMClient {
   // --- Private fields ---
   private readonly secretsClient: SecretsClient;
   private openAIClient: OpenAI;
-  private static model: "gpt-4";
-  private static SECRET_NAME: "OPEN_AI_SECRET_KEY";
+  private static readonly model = "gpt-4" as const;
+  private static readonly SECRET_NAME = "OPEN_AI_SECRET_KEY" as const;
 
   constructor() {
     this.secretsClient = new SecretsClient();
