@@ -36,6 +36,7 @@ export class PieGuysSocialsStack extends cdk.Stack {
         IG_BUSINESS_ID: process.env.IG_BUSINESS_ID!,
         FROM_EMAIL: process.env.FROM_EMAIL!,
         TO_EMAIL: process.env.TO_EMAIL!,
+        AWS_REGION: this.region,
         REGION: this.region,
       },
     });
