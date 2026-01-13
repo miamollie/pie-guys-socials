@@ -53,7 +53,7 @@ export class LLMClient implements ILLMClient {
         throw new Error(`OpenAI request failed: ${msg}`);
       }
 
-      if (!response.output_text.length)
+      if (!response.output_text || !response.output_text.length)
         throw new Error(`OpenAI request failed: no recommendation returned`);
 
       return response.output_text;
