@@ -2,7 +2,8 @@ import { SecretsClient } from "../secrets";
 import { data } from "./stubs";
 
 export class InstagramClient {
-  private static readonly SECRET_NAME = "INSTAGRAM_SECRET_KEY"; // Replace or inject via env
+  private static readonly SECRET_NAME =
+    process.env.IG_SECRET_NAME || "INSTAGRAM_SECRET_KEY";
   private static readonly IG_BUSINESS_ID = process.env.IG_BUSINESS_ID;
   private static readonly GRAPH_API_VERSION = "v23.0";
   private static readonly IG_BASE_URL = `https://graph.facebook.com/${this.GRAPH_API_VERSION}`;
