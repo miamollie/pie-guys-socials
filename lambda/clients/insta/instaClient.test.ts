@@ -70,10 +70,6 @@ describe("InstagramClient", () => {
     );
   });
 
-  test("getStubInsights returns stub data", () => {
-    expect(client.getStubInsights()).toBe(stubData);
-  });
-
   test("getInsights returns stringified JSON", async () => {
     mockSecretsInstance.getSecretValue.mockResolvedValue("REAL_TOKEN");
 

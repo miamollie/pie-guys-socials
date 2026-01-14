@@ -126,35 +126,15 @@ function validateEnvVars() {
 
 **Labels:** enhancement, testing
 
+**Status:** ✅ IMPLEMENTED - See PR #3
+
 **Description:**
-Currently handler.ts hardcodes `getStubInsights()` instead of `getInsights()`. Need a way to switch between stub and real modes.
+This feature has been completed. The application now supports stub mode via environment variables:
+- `USE_STUB_IG=true` - Use stubbed Instagram client
+- `USE_STUB_EMAIL=true` - Use stubbed email client
+- `USE_STUB_LLM=true` - Use stubbed LLM client
 
-**Current State:**
-```typescript
-const igInsights = igClient.getStubInsights(); // Always uses stubs
-```
-
-**Proposed Solution:**
-Add environment variable to control behavior:
-```typescript
-const USE_STUB_DATA = process.env.USE_STUB_DATA === 'true';
-const igInsights = USE_STUB_DATA 
-  ? igClient.getStubInsights() 
-  : await igClient.getInsights();
-```
-
-Or create a method that handles this internally:
-```typescript
-public async getInsightsOrStub(days: number = 7): Promise<any> {
-  const useStub = process.env.USE_STUB_DATA === 'true';
-  return useStub ? this.getStubInsights() : await this.getInsights(days);
-}
-```
-
-**Benefits:**
-- Easy testing without hitting real API
-- Gradual rollout capability
-- Cost savings during development
+See README.md for usage instructions.
 
 ---
 

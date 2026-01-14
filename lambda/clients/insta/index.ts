@@ -55,9 +55,6 @@ export class InstagramClient implements IInstagramClient {
     return response.json();
   }
 
-  public getStubInsights() {
-    return data;
-  }
 
   public async getInsights(days: number = 7): Promise<any> {
     await this.initToken();
