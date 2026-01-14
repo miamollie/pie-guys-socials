@@ -1,10 +1,20 @@
 import { LLMClient } from "./index";
 import OpenAI from "openai";
-import { SecretsClient } from "../secrets";
+import { createSecretsClient } from "../secrets";
 
 // Mock dependencies
 jest.mock("openai");
-jest.mock("../secrets");
+
+const mockSecretsClient = {
+  getSecretValue: jest.fn(),
+  putSecretValue: jest.fn(),
+  describeSecret: jest.fn(),
+  promotePendingVersion: jest.fn(),
+};
+
+jest.mock("../secrets", () => ({
+  createSecretsClient: jest.fn(() => mockSecretsClient),
+}));
 
 describe("LLMClient", () => {
   const mockKey = "fake-openai-key";
@@ -13,11 +23,8 @@ describe("LLMClient", () => {
   };
 
   beforeEach(() => {
-    jest.resetAllMocks();
-
-    (SecretsClient as jest.Mock).mockImplementation(() => ({
-      getSecretValue: jest.fn().mockResolvedValue(mockKey),
-    }));
+    jest.clearAllMocks();
+    mockSecretsClient.getSecretValue.mockResolvedValue(mockKey);
 
     (OpenAI as unknown as jest.Mock).mockImplementation(() => ({
       responses: {
@@ -37,9 +44,7 @@ describe("LLMClient", () => {
   });
 
   it("throws if no secret is found", async () => {
-    (SecretsClient as jest.Mock).mockImplementation(() => ({
-      getSecretValue: jest.fn().mockResolvedValue(null),
-    }));
+    mockSecretsClient.getSecretValue.mockResolvedValue("");
 
     const client = new LLMClient();
     await expect(

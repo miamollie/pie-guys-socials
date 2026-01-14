@@ -6,7 +6,14 @@ import {
   UpdateSecretVersionStageCommand,
 } from "@aws-sdk/client-secrets-manager";
 
-export class SecretsClient {
+export interface ISecretsClient {
+  getSecretValue(secretId: string, versionStage?: string): Promise<string>;
+  putSecretValue(secretId: string, token: string, value: any): Promise<void>;
+  describeSecret(secretId: string): Promise<any>;
+  promotePendingVersion(secretId: string, token: string): Promise<void>;
+}
+
+export class SecretsClient implements ISecretsClient {
   private client: SecretsManagerClient;
 
   constructor(region = process.env.AWS_REGION) {
@@ -81,4 +88,64 @@ export class SecretsClient {
 
     console.log(`✅ Rotation complete for ${secretId}`);
   }
+}
+
+/**
+ * Stubbed SecretsClient for testing without AWS Secrets Manager
+ */
+export class StubbedSecretsClient implements ISecretsClient {
+  private secrets: Map<string, string> = new Map();
+
+  constructor() {
+    // Pre-populate with fake tokens
+    this.secrets.set("INSTAGRAM_SECRET_KEY", "fake_instagram_token_12345");
+    this.secrets.set("OPEN_AI_SECRET_KEY", "fake_openai_key_67890");
+  }
+
+  async getSecretValue(secretId: string, versionStage = "AWSCURRENT"): Promise<string> {
+    console.log(`📋 [Stubbed] Getting secret: ${secretId} (stage: ${versionStage})`);
+    const value = this.secrets.get(secretId);
+    
+    if (!value) {
+      throw new Error(`[Stubbed] Secret ${secretId} not found`);
+    }
+    
+    return value;
+  }
+
+  async putSecretValue(secretId: string, token: string, value: any): Promise<void> {
+    const valueStr = typeof value === "string" ? value : JSON.stringify(value);
+    console.log(`📋 [Stubbed] Storing secret: ${secretId} (token: ${token}) = ${valueStr.substring(0, 20)}...`);
+    this.secrets.set(secretId, valueStr);
+  }
+
+  async describeSecret(secretId: string): Promise<any> {
+    console.log(`📋 [Stubbed] Describing secret: ${secretId}`);
+    return {
+      VersionIdsToStages: {
+        "fake-version-id": ["AWSCURRENT"],
+        "fake-pending-id": ["AWSPENDING"],
+      },
+    };
+  }
+
+  async promotePendingVersion(secretId: string, token: string): Promise<void> {
+    console.log(`📋 [Stubbed] Promoting pending version for ${secretId} (token: ${token})`);
+    console.log(`✅ [Stubbed] Rotation complete for ${secretId}`);
+  }
+}
+
+/**
+ * Factory function to create secrets client based on environment
+ */
+export function createSecretsClient(region?: string): ISecretsClient {
+  const useStub = process.env.USE_STUB_SECRETS === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed Secrets Manager client");
+    return new StubbedSecretsClient();
+  }
+  
+  console.log("🔐 Using real Secrets Manager client");
+  return new SecretsClient(region);
 }

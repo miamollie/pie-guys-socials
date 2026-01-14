@@ -1,7 +1,7 @@
 import { createInstagramClient } from "./clients/insta";
-import { SecretsClient } from "./clients/secrets";
+import { createSecretsClient } from "./clients/secrets";
 
-const secretclient = new SecretsClient();
+const secretclient = createSecretsClient();
 const igclient = createInstagramClient();
 
 /**

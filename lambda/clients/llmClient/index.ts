@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { SecretsClient } from "../secrets";
+import { createSecretsClient, ISecretsClient } from "../secrets";
 import { StubbedLLMClient } from "./stubbed";
 
 export interface ILLMClient {
@@ -13,14 +13,14 @@ interface LLMInput {
 
 export class LLMClient implements ILLMClient {
   // --- Private fields ---
-  private readonly secretsClient: SecretsClient;
+  private readonly secretsClient: ISecretsClient;
   private openAIClient: OpenAI;
   private static readonly model = "gpt-4" as const;
   private static readonly SECRET_NAME =
     process.env.OPEN_AI_SECRET_NAME || "OPEN_AI_SECRET_KEY";
 
   constructor() {
-    this.secretsClient = new SecretsClient();
+    this.secretsClient = createSecretsClient();
   }
 
   private async initClient() {

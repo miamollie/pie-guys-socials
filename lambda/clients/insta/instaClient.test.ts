@@ -1,20 +1,25 @@
 import { InstagramClient } from "./";
-import { SecretsClient } from "../secrets";
+import { createSecretsClient, ISecretsClient } from "../secrets";
 import { data as stubData } from "./stubs";
 
 // ---- Mock SecretsClient ----
 jest.mock("../secrets", () => {
+  const mockSecretsClient = {
+    getSecretValue: jest.fn(),
+    putSecretValue: jest.fn(),
+    describeSecret: jest.fn(),
+    promotePendingVersion: jest.fn(),
+  };
+  
   return {
-    SecretsClient: jest.fn().mockImplementation(() => ({
-      getSecretValue: jest.fn(),
-    })),
+    createSecretsClient: jest.fn(() => mockSecretsClient),
   };
 });
 
 // ---- Mock fetch ----
 global.fetch = jest.fn();
 
-const mockSecretsInstance = new SecretsClient() as jest.Mocked<SecretsClient>;
+const mockSecretsInstance = (createSecretsClient as jest.Mock)() as jest.Mocked<ISecretsClient>;
 
 describe("InstagramClient", () => {
   let client: InstagramClient;
@@ -40,7 +45,7 @@ describe("InstagramClient", () => {
   });
 
   test("initToken throws if secret missing", async () => {
-    mockSecretsInstance.getSecretValue.mockResolvedValueOnce(null);
+    mockSecretsInstance.getSecretValue.mockResolvedValueOnce("" as any);
 
     await expect((client as any).initToken()).rejects.toThrow(
       "Could not initialize Instagram access token"

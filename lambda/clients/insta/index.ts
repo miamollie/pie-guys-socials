@@ -1,4 +1,4 @@
-import { SecretsClient } from "../secrets";
+import { createSecretsClient, ISecretsClient } from "../secrets";
 import { data } from "./stubs";
 import { StubbedInstagramClient } from "./stubbed";
 
@@ -16,10 +16,10 @@ export class InstagramClient implements IInstagramClient {
   private static readonly IG_BASE_URL = `https://graph.facebook.com/${this.GRAPH_API_VERSION}`;
 
   private token: string | null = null;
-  private readonly secretsClient: SecretsClient;
+  private readonly secretsClient: ISecretsClient;
 
   constructor() {
-    this.secretsClient = new SecretsClient();
+    this.secretsClient = createSecretsClient();
   }
 
   // --- Initialize client: fetch and cache IG access token ---

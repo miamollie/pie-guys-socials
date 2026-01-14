@@ -9,6 +9,7 @@
         "IG_BUSINESS_ID": "1104480968021448",
         "USE_STUB_IG": "true",
         "USE_STUB_EMAIL": "true",
-        "USE_STUB_LLM": "true"
+        "USE_STUB_LLM": "true",
+        "USE_STUB_SECRETS": "true"
     }
 }

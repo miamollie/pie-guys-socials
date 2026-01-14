@@ -42,6 +42,7 @@ export class PieGuysSocialsStack extends cdk.Stack {
         USE_STUB_IG: process.env.USE_STUB_IG || "false",
         USE_STUB_EMAIL: process.env.USE_STUB_EMAIL || "false",
         USE_STUB_LLM: process.env.USE_STUB_LLM || "false",
+        USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || "false",
       },
     });
 
@@ -84,6 +85,7 @@ export class PieGuysSocialsStack extends cdk.Stack {
         handler: "handler",
         environment: {
           USE_STUB_IG: process.env.USE_STUB_IG || "false",
+          USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || "false",
           AWS_REGION: this.region,
         },
       }
