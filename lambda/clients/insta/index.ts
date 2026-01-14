@@ -1,7 +1,12 @@
 import { SecretsClient } from "../secrets";
 import { data } from "./stubs";
 import { StubbedInstagramClient } from "./stubbed";
-import { IInstagramClient } from "../interfaces";
+
+export interface IInstagramClient {
+  getInsights(days?: number): Promise<string>;
+  refreshToken?(): Promise<{ access_token: string }>;
+  testAccess?(): Promise<void>;
+}
 
 export class InstagramClient implements IInstagramClient {
   private static readonly SECRET_NAME =

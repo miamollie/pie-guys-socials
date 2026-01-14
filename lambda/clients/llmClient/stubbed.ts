@@ -1,4 +1,4 @@
-import { ILLMClient } from "../interfaces";
+import { ILLMClient } from "./index";
 
 interface LLMInput {
   system: string;

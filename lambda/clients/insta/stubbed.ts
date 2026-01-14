@@ -1,5 +1,5 @@
 import { data } from "./stubs";
-import { IInstagramClient } from "../interfaces";
+import { IInstagramClient } from "./index";
 
 /**
  * Stubbed Instagram client for testing without real API calls

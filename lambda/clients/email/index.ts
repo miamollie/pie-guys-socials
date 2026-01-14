@@ -1,6 +1,15 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { StubbedEmailClient } from "./stubbed";
-import { IEmailClient } from "../interfaces";
+
+export interface IEmailClient {
+  send(message: {
+    to: string;
+    from: string;
+    subject: string;
+    text?: string;
+    html?: string;
+  }): Promise<void>;
+}
 
 export interface EmailMessage {
   to: string;

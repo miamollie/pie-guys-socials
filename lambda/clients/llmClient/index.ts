@@ -1,7 +1,10 @@
 import OpenAI from "openai";
 import { SecretsClient } from "../secrets";
 import { StubbedLLMClient } from "./stubbed";
-import { ILLMClient } from "../interfaces";
+
+export interface ILLMClient {
+  get(input: { system: string; prompt: string }): Promise<string>;
+}
 
 interface LLMInput {
   system: string;

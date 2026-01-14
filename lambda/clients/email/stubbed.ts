@@ -1,5 +1,4 @@
-import { EmailMessage } from "./index";
-import { IEmailClient } from "../interfaces";
+import { EmailMessage, IEmailClient } from "./index";
 
 /**
  * Stubbed email client for testing without sending real emails

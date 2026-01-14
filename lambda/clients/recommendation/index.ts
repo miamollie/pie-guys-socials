@@ -1,5 +1,6 @@
 import { prompts } from "./prompts";
-import { ILLMClient, IEmailClient } from "../interfaces";
+import { ILLMClient } from "../llmClient";
+import { IEmailClient } from "../email";
 
 export class RecommendationClient {
   // --- Private fields ---
