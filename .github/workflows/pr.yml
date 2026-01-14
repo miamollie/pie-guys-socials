@@ -1,0 +1,45 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm test
+        env:
+          # Run tests in stub mode (no AWS credentials needed)
+          USE_STUB_IG: 'true'
+          USE_STUB_EMAIL: 'true'
+          USE_STUB_LLM: 'true'
+          USE_STUB_SECRETS: 'true'
+      
+      - name: Build Lambda bundles
+        run: npm run build
+      
+      - name: Upload Lambda artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-bundles
+          path: cdk.out/
+          retention-days: 7
