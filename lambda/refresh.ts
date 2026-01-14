@@ -1,8 +1,8 @@
-import { InstagramClient } from "./clients/insta";
-import { SecretsClient } from "./clients/secrets";
+import { createInstagramClient } from "./clients/insta";
+import { createSecretsClient } from "./clients/secrets";
 
-const secretclient = new SecretsClient();
-const igclient = new InstagramClient();
+const secretclient = createSecretsClient();
+const igclient = createInstagramClient();
 
 /**
  * Secrets Manager rotation Lambda for Instagram Graph long-lived tokens
@@ -54,6 +54,9 @@ export const handler = async (event: any) => {
 // Step 1: Create new secret (refresh token)
 // ---------------------------------------------------------------------------
 async function createSecret(secretId: string, token: string) {
+  if (!igclient.refreshToken) {
+    throw new Error("refreshToken method not available on client");
+  }
   const data = await igclient.refreshToken();
   await secretclient.putSecretValue(secretId, token, data);
 }
@@ -71,6 +74,9 @@ async function setSecret(secretId: string) {
 async function testSecret(secretId: string) {
   console.log(`🧪 Testing secret version for ${secretId}`);
 
+  if (!igclient.testAccess) {
+    throw new Error("testAccess method not available on client");
+  }
   await igclient.testAccess();
 
   console.log(`✅ Token valid for Instagram user`);

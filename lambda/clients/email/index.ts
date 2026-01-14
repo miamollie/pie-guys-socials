@@ -1,4 +1,15 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { StubbedEmailClient } from "./stubbed";
+
+export interface IEmailClient {
+  send(message: {
+    to: string;
+    from: string;
+    subject: string;
+    text?: string;
+    html?: string;
+  }): Promise<void>;
+}
 
 export interface EmailMessage {
   to: string;
@@ -8,7 +19,7 @@ export interface EmailMessage {
   html?: string;
 }
 
-export class EmailClient {
+export class EmailClient implements IEmailClient {
   private readonly ses: SESClient;
 
   constructor() {
@@ -37,4 +48,19 @@ export class EmailClient {
 
     await this.ses.send(e);
   }
+}
+
+/**
+ * Factory function to create Email client based on environment
+ */
+export function createEmailClient(): IEmailClient {
+  const useStub = process.env.USE_STUB_EMAIL === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed email client");
+    return new StubbedEmailClient();
+  }
+  
+  console.log("📧 Using real email client (SES)");
+  return new EmailClient();
 }

@@ -1,7 +1,14 @@
-import { SecretsClient } from "../secrets";
+import { createSecretsClient, ISecretsClient } from "../secrets";
 import { data } from "./stubs";
+import { StubbedInstagramClient } from "./stubbed";
 
-export class InstagramClient {
+export interface IInstagramClient {
+  getInsights(days?: number): Promise<string>;
+  refreshToken?(): Promise<{ access_token: string }>;
+  testAccess?(): Promise<void>;
+}
+
+export class InstagramClient implements IInstagramClient {
   private static readonly SECRET_NAME =
     process.env.IG_SECRET_NAME || "INSTAGRAM_SECRET_KEY";
   private static readonly IG_BUSINESS_ID = process.env.IG_BUSINESS_ID;
@@ -9,10 +16,10 @@ export class InstagramClient {
   private static readonly IG_BASE_URL = `https://graph.facebook.com/${this.GRAPH_API_VERSION}`;
 
   private token: string | null = null;
-  private readonly secretsClient: SecretsClient;
+  private readonly secretsClient: ISecretsClient;
 
   constructor() {
-    this.secretsClient = new SecretsClient();
+    this.secretsClient = createSecretsClient();
   }
 
   // --- Initialize client: fetch and cache IG access token ---
@@ -53,9 +60,6 @@ export class InstagramClient {
     return response.json();
   }
 
-  public getStubInsights() {
-    return data;
-  }
 
   public async getInsights(days: number = 7): Promise<any> {
     await this.initToken();
@@ -145,4 +149,19 @@ export class InstagramClient {
 
     console.log(`✅ Instagram token valid for user ID: ${data.id}`);
   }
+}
+
+/**
+ * Factory function to create Instagram client based on environment
+ */
+export function createInstagramClient(): IInstagramClient {
+  const useStub = process.env.USE_STUB_IG === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed Instagram client");
+    return new StubbedInstagramClient();
+  }
+  
+  console.log("🌐 Using real Instagram client");
+  return new InstagramClient();
 }

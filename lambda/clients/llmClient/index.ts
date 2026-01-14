@@ -1,21 +1,26 @@
 import OpenAI from "openai";
-import { SecretsClient } from "../secrets";
+import { createSecretsClient, ISecretsClient } from "../secrets";
+import { StubbedLLMClient } from "./stubbed";
+
+export interface ILLMClient {
+  get(input: { system: string; prompt: string }): Promise<string>;
+}
 
 interface LLMInput {
   system: string;
   prompt: string;
 }
 
-export class LLMClient {
+export class LLMClient implements ILLMClient {
   // --- Private fields ---
-  private readonly secretsClient: SecretsClient;
+  private readonly secretsClient: ISecretsClient;
   private openAIClient: OpenAI;
   private static readonly model = "gpt-4" as const;
   private static readonly SECRET_NAME =
-    (process.env.OPEN_AI_SECRET_NAME as const) || ("OPEN_AI_SECRET_KEY" as const);
+    process.env.OPEN_AI_SECRET_NAME || "OPEN_AI_SECRET_KEY";
 
   constructor() {
-    this.secretsClient = new SecretsClient();
+    this.secretsClient = createSecretsClient();
   }
 
   private async initClient() {
@@ -51,7 +56,7 @@ export class LLMClient {
         throw new Error(`OpenAI request failed: ${msg}`);
       }
 
-      if (!response.output_text.length)
+      if (!response.output_text || !response.output_text.length)
         throw new Error(`OpenAI request failed: no recommendation returned`);
 
       return response.output_text;
@@ -60,4 +65,19 @@ export class LLMClient {
       throw err;
     }
   }
+}
+
+/**
+ * Factory function to create LLM client based on environment
+ */
+export function createLLMClient(): ILLMClient {
+  const useStub = process.env.USE_STUB_LLM === "true";
+  
+  if (useStub) {
+    console.log("📋 Using stubbed LLM client");
+    return new StubbedLLMClient();
+  }
+  
+  console.log("🤖 Using real LLM client (OpenAI)");
+  return new LLMClient();
 }

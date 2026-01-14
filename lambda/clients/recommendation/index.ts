@@ -1,14 +1,14 @@
-import { EmailClient } from "../email";
 import { prompts } from "./prompts";
-import { LLMClient } from "../llmClient";
+import { ILLMClient } from "../llmClient";
+import { IEmailClient } from "../email";
 
 export class RecommendationClient {
   // --- Private fields ---
-  private readonly emailClient: EmailClient;
-  private readonly llmClient: LLMClient;
+  private readonly emailClient: IEmailClient;
+  private readonly llmClient: ILLMClient;
 
   // --- Constructor ---
-  constructor(llm: LLMClient, email: EmailClient) {
+  constructor(llm: ILLMClient, email: IEmailClient) {
     this.llmClient = llm;
     this.emailClient = email;
   }

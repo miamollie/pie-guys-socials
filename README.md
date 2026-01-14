@@ -68,6 +68,34 @@ npm run cdk:diff    # compare with deployed stack
 
 ## Testing
 
+### Stub Mode for End-to-End Testing
+
+The application supports **stub mode** to test the entire infrastructure and code flow without hitting external APIs. This is perfect for:
+- Testing deployments without using API quotas/tokens
+- Development and debugging
+- Cost-effective integration testing
+
+Set these environment variables to enable stub mode:
+```bash
+USE_STUB_IG=true      # Use stubbed Instagram client (no API calls)
+USE_STUB_EMAIL=true   # Log emails instead of sending via SES
+USE_STUB_LLM=true     # Use pre-generated LLM response (no OpenAI tokens)
+```
+
+**Deploy in stub mode:**
+```bash
+# Copy example env file and set stub flags to true
+cp .env.example .env
+# Edit .env and set USE_STUB_* to true
+
+# Deploy with stubbed clients
+npm run cdk:deploy
+```
+
+**Production deployment:**
+Set all `USE_STUB_*` variables to `false` in your `.env` file before deploying.
+
+### Unit Tests
 e2e tests using SAM CLI
 Unit tests using Jest
 
