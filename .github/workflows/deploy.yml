@@ -54,26 +54,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      # ========================================================================
-      # OPTION 1: IAM User with Access Keys
-      # ========================================================================
-      # Uncomment this section if using IAM user credentials
-      # - name: Configure AWS credentials (IAM User)
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: eu-west-1
-      
-      # ========================================================================
-      # OPTION 2: OIDC with IAM Role (Recommended)
-      # ========================================================================
-      # Uncomment this section if using OIDC
-      # - name: Configure AWS credentials (OIDC)
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::YOUR_ACCOUNT_ID:role/GitHubActionsDeployRole
-      #     aws-region: eu-west-1
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::miamollie:role/GitHubActionsDeployRole_PieGuys
+          aws-region: eu-west-1
       
       - name: Deploy CDK stack
         run: npm run cdk:deploy -- --require-approval never
@@ -85,10 +70,10 @@ jobs:
           IG_BUSINESS_ID: ${{ secrets.IG_BUSINESS_ID }}
           FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
-          USE_STUB_IG: 'false'
-          USE_STUB_EMAIL: 'false'
-          USE_STUB_LLM: 'false'
-          USE_STUB_SECRETS: 'false'
+          USE_STUB_IG: 'true' # Not using real services during deploy for testing
+          USE_STUB_EMAIL: 'true' # Not using real services during deploy for testing
+          USE_STUB_LLM: 'true' # Not using real services during deploy for testing
+          USE_STUB_SECRETS: 'true' # Not using real services during deploy for testing
       
       - name: Deployment summary
         run: |
