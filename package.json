@@ -14,7 +14,8 @@
     "cdk": "cdk",
     "cdk:deploy": "dotenv -- cdk deploy --require-approval never",
     "cdk:diff": "dotenv -- cdk diff",
-    "cdk:synth": "dotenv -- cdk synth"
+    "cdk:synth": "dotenv -- cdk synth",
+    "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",

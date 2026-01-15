@@ -1,0 +1,116 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  setup:
+    name: Setup Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Cache node_modules
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      
+      - name: Run tests
+        run: npm test -- --cacheDirectory=~/.jest-cache
+        env:
+          USE_STUB_IG: 'true'
+          USE_STUB_EMAIL: 'true'
+          USE_STUB_LLM: 'true'
+          USE_STUB_SECRETS: 'true'
+
+  deploy:
+    name: Deploy CDK Stack
+    runs-on: ubuntu-latest
+    needs: [setup, test]
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::miamollie:role/GitHubActionsDeployRole_PieGuys
+          aws-region: eu-west-1
+      
+      - name: Deploy CDK stack
+        run: npm run cdk:deploy -- --require-approval never
+        env:
+          # Production environment variables
+          AWS_REGION: eu-west-1
+          IG_SECRET_NAME: ${{ secrets.IG_SECRET_NAME }}
+          OPEN_AI_SECRET_NAME: ${{ secrets.OPEN_AI_SECRET_NAME }}
+          IG_BUSINESS_ID: ${{ secrets.IG_BUSINESS_ID }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          USE_STUB_IG: 'true' # Not using real services during deploy for testing
+          USE_STUB_EMAIL: 'true' # Not using real services during deploy for testing
+          USE_STUB_LLM: 'true' # Not using real services during deploy for testing
+          USE_STUB_SECRETS: 'true' # Not using real services during deploy for testing
+      
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "Stack: PieGuysSocialsStack"
+          echo "Region: eu-west-1"
+          echo "Deployed at: $(date)"
