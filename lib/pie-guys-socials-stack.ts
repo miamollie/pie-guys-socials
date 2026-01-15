@@ -36,7 +36,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
         IG_BUSINESS_ID: process.env.IG_BUSINESS_ID!,
         FROM_EMAIL: process.env.FROM_EMAIL!,
         TO_EMAIL: process.env.TO_EMAIL!,
-        AWS_REGION: this.region,
         REGION: this.region,
         // Stub mode flags - set to "true" to use stubbed clients
         USE_STUB_IG: process.env.USE_STUB_IG || "false",
@@ -86,7 +85,6 @@ export class PieGuysSocialsStack extends cdk.Stack {
         environment: {
           USE_STUB_IG: process.env.USE_STUB_IG || "false",
           USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || "false",
-          AWS_REGION: this.region,
         },
       }
     );
