@@ -99,6 +99,105 @@ Set all `USE_STUB_*` variables to `false` in your `.env` file before deploying.
 e2e tests using SAM CLI
 Unit tests using Jest
 
+---
+
+## 📊 Logging & Observability
+
+This project uses **structured logging** with [pino](https://getpino.io/) and **CloudWatch** for monitoring and debugging.
+
+### Structured Logging
+
+All logs are output as JSON to CloudWatch, making them queryable and filterable. Key features:
+
+- **Automatic Lambda context enrichment**: Each log includes `requestId`, `functionName`, and execution metadata
+- **Operation timing**: `timeOperation()` automatically logs duration for all async operations
+- **Error serialization**: Full error stack traces and context included in error logs
+- **Type-safe logging**: TypeScript interfaces prevent missing required fields
+
+### CloudWatch Logs Insights
+
+Query your logs directly in AWS Console → CloudWatch → Log Insights. Select your Lambda log groups:
+- `/aws/lambda/PieGuysSocialsStack-WeeklyInsightWorker`
+- `/aws/lambda/PieGuysSocialsStack-RefreshIgTokenLambda`
+
+#### Useful Queries
+
+**Find all errors in the last 24 hours:**
+```
+fields @timestamp, @message, functionName, operation, error
+| filter @message like /error|Error|ERROR|failed|Failed/
+| sort @timestamp desc
+```
+
+**Average operation duration by operation type:**
+```
+fields @timestamp, operation, duration
+| filter duration > 0
+| stats avg(duration) as avg_ms, max(duration) as max_ms, count() as invocations by operation
+```
+
+**Find slow operations (> 10 seconds):**
+```
+fields @timestamp, functionName, operation, duration
+| filter duration > 10000
+| sort duration desc
+```
+
+**Instagram API failures:**
+```
+fields @timestamp, @message, error
+| filter (operation = "fetch-instagram-insights" or operation = "refresh-instagram-token") and error
+| stats count() as errors by operation
+```
+
+**Email sending metrics:**
+```
+fields @timestamp, operation
+| filter operation = "send-email-recommendation"
+| stats count() as emails_sent
+```
+
+**Weekly digest - all operations summary:**
+```
+fields @timestamp, operation, duration
+| filter duration > 0
+| stats count() as invocations, avg(duration) as avg_ms, max(duration) as max_ms by operation
+```
+
+**Recent 20 logs with context:**
+```
+fields @timestamp, @message, operation, duration, functionName, requestId
+| sort @timestamp desc
+| limit 20
+```
+
+### CloudWatch Alarms & Dashboard
+
+The CDK stack automatically creates:
+
+**3 Critical Alarms** (monitoring):
+1. **Insights handler errors** - Alerts if weekly summary handler fails
+2. **Token refresh errors** - Alerts if Instagram token rotation fails
+3. **Slow execution** - Alerts if insights handler takes > 30 seconds
+
+**CloudWatch Dashboard** (`PieGuys-Monitoring`):
+- Handler invocations and error counts
+- Execution duration trends
+- Error status indicators
+- Recent error logs (last 24h)
+
+View in AWS Console → CloudWatch → Dashboards → `PieGuys-Monitoring`
+
+### Cost
+
+Observability is extremely low-cost:
+- **CloudWatch Logs**: FREE (first 5GB/month, your app uses <100MB)
+- **Dashboard**: FREE (up to 3 dashboards)
+- **Alarms**: $0.10/month (3 alarms)
+- **Total**: ~$0.10/month
+
+---
+
 ## 📝 Decisions & Tradeoffs
 
 Secrets handled manually → simpler for MVP, avoids mistakes.
