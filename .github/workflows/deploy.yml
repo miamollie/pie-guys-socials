@@ -6,8 +6,8 @@ on:
   workflow_dispatch: # Allow manual trigger
 
 jobs:
-  test:
-    name: Test
+  setup:
+    name: Setup Dependencies
     runs-on: ubuntu-latest
     
     steps:
@@ -23,8 +23,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Cache node_modules
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      
       - name: Run tests
-        run: npm test
+        run: npm test -- --cacheDirectory=~/.jest-cache
         env:
           USE_STUB_IG: 'true'
           USE_STUB_EMAIL: 'true'
@@ -34,12 +64,11 @@ jobs:
   deploy:
     name: Deploy CDK Stack
     runs-on: ubuntu-latest
-    needs: test
+    needs: [setup, test]
     
-    # Uncomment when using OIDC
-    # permissions:
-    #   id-token: write
-    #   contents: read
+    permissions:
+      id-token: write
+      contents: read
     
     steps:
       - name: Checkout code
@@ -49,10 +78,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
       
-      - name: Install dependencies
-        run: npm ci
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            ~/.jest-cache
+          key: deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
