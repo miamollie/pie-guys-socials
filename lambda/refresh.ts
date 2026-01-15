@@ -1,5 +1,6 @@
 import { createInstagramClient } from "./clients/insta";
 import { createSecretsClient } from "./clients/secrets";
+import { createLogger, timeOperation, logMetric, LambdaContext } from "./utils/logger";
 
 const secretclient = createSecretsClient();
 const igclient = createInstagramClient();
@@ -8,87 +9,83 @@ const igclient = createInstagramClient();
  * Secrets Manager rotation Lambda for Instagram Graph long-lived tokens
  * Implements: createSecret, setSecret, testSecret, finishSecret
  */
-export const handler = async (event: any) => {
-  console.log("Rotation event:", JSON.stringify(event, null, 2));
+export const handler = async (event: any, context?: LambdaContext) => {
+  const logger = createLogger(context);
+  logger.info({ event }, "Starting secret rotation");
 
   const secretId = event.SecretId;
   const token = event.ClientRequestToken;
   const step = event.Step;
 
-  // todo figure out validation
-  // // --- Validation -----------------------------------------------------------
-  // const metadata = await client.send(
-  //   new DescribeSecretCommand({ SecretId: secretId })
-  // );
-  // const versions = metadata.VersionIdsToStages || {};
-  // if (!(token in versions))
-  //   throw new Error(`Secret version ${token} not found`);
-  // if (versions[token].includes("AWSCURRENT")) {
-  //   console.log("Secret version already current — skipping rotation.");
-  //   return;
-  // }
-  // if (!versions[token].includes("AWSPENDING")) {
-  //   throw new Error(`Secret version ${token} not set as AWSPENDING`);
-  // }
-
-  // --- Step Routing ---------------------------------------------------------
-  switch (step) {
-    case "createSecret":
-      await createSecret(secretId, token);
-      break;
-    case "setSecret":
-      await setSecret(secretId);
-      break;
-    case "testSecret":
-      await testSecret(secretId);
-      break;
-    case "finishSecret":
-      await finishSecret(secretId, token);
-      break;
-    default:
-      throw new Error(`Invalid step parameter: ${step}`);
+  try {
+    // --- Step Routing ---------------------------------------------------------
+    switch (step) {
+      case "createSecret":
+        await timeOperation(`rotation-${step}`, () => createSecret(secretId, token, logger), context);
+        break;
+      case "setSecret":
+        await timeOperation(`rotation-${step}`, () => setSecret(secretId, logger), context);
+        break;
+      case "testSecret":
+        await timeOperation(`rotation-${step}`, () => testSecret(secretId, logger), context);
+        break;
+      case "finishSecret":
+        await timeOperation(`rotation-${step}`, () => finishSecret(secretId, token, logger), context);
+        break;
+      default:
+        throw new Error(`Invalid step parameter: ${step}`);
+    }
+    
+    logMetric("secret-rotation-success", 1, "Count", { step, secretId });
+    logger.info({ step, secretId }, "Secret rotation step completed");
+  } catch (error) {
+    logger.error({ error, step, secretId }, "Secret rotation failed");
+    logMetric("secret-rotation-error", 1, "Count", { step, secretId });
+    throw error;
   }
 };
 
 // ---------------------------------------------------------------------------
 // Step 1: Create new secret (refresh token)
 // ---------------------------------------------------------------------------
-async function createSecret(secretId: string, token: string) {
+async function createSecret(secretId: string, token: string, logger: any) {
   if (!igclient.refreshToken) {
     throw new Error("refreshToken method not available on client");
   }
+  logger.info({ secretId }, "Creating new secret version");
   const data = await igclient.refreshToken();
   await secretclient.putSecretValue(secretId, token, data);
+  logger.info({ secretId, token }, "New secret version created");
 }
 
 // ---------------------------------------------------------------------------
 // Step 2: (Optional) Configure secret if needed
 // ---------------------------------------------------------------------------
-async function setSecret(secretId: string) {
-  console.log(`SetSecret: No configuration required for ${secretId}`);
+async function setSecret(secretId: string, logger: any) {
+  logger.info({ secretId }, "SetSecret: No configuration required");
 }
 
 // ---------------------------------------------------------------------------
 // Step 3: Test the new secret version
 // ---------------------------------------------------------------------------
-async function testSecret(secretId: string) {
-  console.log(`🧪 Testing secret version for ${secretId}`);
+async function testSecret(secretId: string, logger: any) {
+  logger.info({ secretId }, "Testing new secret version");
 
   if (!igclient.testAccess) {
     throw new Error("testAccess method not available on client");
   }
   await igclient.testAccess();
 
-  console.log(`✅ Token valid for Instagram user`);
+  logger.info({ secretId }, "Token validation successful");
 }
 
 // ---------------------------------------------------------------------------
 // Step 4: Mark new version as AWSCURRENT
 // ---------------------------------------------------------------------------
-async function finishSecret(secretId: string, token: string) {
-  console.log("🎉 Finishing rotation and promoting new version...");
+async function finishSecret(secretId: string, token: string, logger: any) {
+  logger.info({ secretId, token }, "Finishing rotation and promoting new version");
 
   await secretclient.promotePendingVersion(secretId, token);
 
-  console.log(`✅ Rotation complete for ${secretId}`);
+  logger.info({ secretId }, "Rotation complete - new version promoted to AWSCURRENT");
 }
