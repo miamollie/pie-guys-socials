@@ -156,6 +156,8 @@ aws iam create-open-id-connect-provider \
   --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
 ```
 
+DONE: OpenIDConnectProviderArn": "arn:aws:iam::424795685451:oidc-provider/token.actions.githubusercontent.com
+
 #### 2. Create IAM Role with Trust Policy
 
 Create a new role: `GitHubActionsDeployRole`
@@ -174,9 +176,7 @@ Create a new role: `GitHubActionsDeployRole`
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "StringLike": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
           "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/pie-guys-socials:ref:refs/heads/main"
         }
       }
@@ -189,7 +189,7 @@ Create a new role: `GitHubActionsDeployRole`
 - `YOUR_ACCOUNT_ID`: Your AWS account ID (e.g., `424795685451`)
 - `YOUR_GITHUB_USERNAME`: Your GitHub username (e.g., `miamollie`)
 
-**Key security feature:** The `StringLike` condition ensures only workflows running on the `main` branch of your specific repo can assume this role.
+
 
 #### 3. Attach Permissions Policy to Role
 
@@ -206,10 +206,6 @@ Same policy as Option 1:
         "lambda:*",
         "events:*",
         "iam:*",
-        "logs:*",
-        "secretsmanager:DescribeSecret",
-        "secretsmanager:GetSecretValue",
-        "ses:*",
         "s3:*"
       ],
       "Resource": "*"
