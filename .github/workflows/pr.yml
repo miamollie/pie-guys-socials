@@ -77,6 +77,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      # Build TypeScript and synthesize CDK CloudFormation template with Lambda bundles
       - name: Build TypeScript
         run: npm run build
       
@@ -95,9 +96,10 @@ jobs:
           FROM_EMAIL: test@example.com
           TO_EMAIL: test@example.com
       
-      - name: Upload CDK artifacts
+      - name: Upload CDK synthesis artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: cdk-artifacts
+          name: cdk-synthesis-output
           path: cdk.out/
           retention-days: 7
+          if-no-files-found: warn
