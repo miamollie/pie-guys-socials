@@ -55,13 +55,58 @@ AWS Secrets Manager
 
 ```bash
 npm install
-Deploy CDK Stack
-Using .env for local configuration:
+```
 
+### Configuration
 
+This project follows **12-factor app** principles with clear separation between:
+- **Build-time config**: Infrastructure settings in `cdk.json` (secret names, etc.)
+- **Deploy-time config**: AWS account/region from AWS CLI credentials
+- **Runtime config**: Business values via environment variables (emails, IDs, stub flags)
+
+#### Build-Time Configuration (cdk.json)
+
+Secret names and other infrastructure config are stored in `cdk.json` context:
+- `igSecretName`: Name of Instagram secret in Secrets Manager (default: `INSTAGRAM_SECRET_KEY`)
+- `openAiSecretName`: Name of OpenAI secret in Secrets Manager (default: `OPEN_AI_SECRET_KEY`)
+
+Override via command line:
+```bash
+cdk deploy --context igSecretName=MY_IG_SECRET
+```
+
+#### Deploy-Time Configuration
+
+AWS account and region are automatically detected from your AWS CLI configuration:
+```bash
+# Uses default AWS profile
+cdk deploy
+
+# Use specific profile
+cdk deploy --profile production
+
+# Explicit account/region
+cdk deploy --context account=123456789 --context region=us-east-1
+```
+
+#### Runtime Configuration (.env)
+
+Business configuration and feature flags go in `.env` file:
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+Required runtime environment variables:
+- `TO_EMAIL`: Recipient email address
+- `FROM_EMAIL`: SES verified sender email
+- `IG_BUSINESS_ID`: Instagram Business Account ID
+- `USE_STUB_*`: Feature flags for testing mode
+
+### Deploy CDK Stack
+
+```bash
 npm run cdk:deploy # deploy
-
-
 npm run cdk:synth   # synthesize CloudFormation template
 npm run cdk:diff    # compare with deployed stack
 ```

@@ -17,6 +17,8 @@
     ]
   },
   "context": {
+    "igSecretName": "INSTAGRAM_SECRET_KEY",
+    "openAiSecretName": "OPEN_AI_SECRET_KEY",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [

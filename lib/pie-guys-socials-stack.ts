@@ -13,16 +13,31 @@ export class PieGuysSocialsStack extends cdk.Stack {
     const insightsCron = events.Schedule.expression("cron(0 17 ? * FRI *)");
     // This triggers every Friday at 17:00 UTC
 
+    // Get secret names from CDK context (build-time config)
+    const igSecretName = this.node.tryGetContext('igSecretName') || 'INSTAGRAM_SECRET_KEY';
+    const openAiSecretName = this.node.tryGetContext('openAiSecretName') || 'OPEN_AI_SECRET_KEY';
+
     const igSecret = secrets.Secret.fromSecretNameV2(
       this,
       "IgTokenSecret",
-      process.env.IG_SECRET_NAME!
+      igSecretName
     );
     const openAiSecret = secrets.Secret.fromSecretNameV2(
       this,
       "OpenAIKeySecret",
-      process.env.OPEN_AI_SECRET_NAME!
+      openAiSecretName
     );
+
+    // Runtime configuration from environment (passed to Lambda)
+    const runtimeConfig = {
+      IG_BUSINESS_ID: process.env.IG_BUSINESS_ID || '',
+      FROM_EMAIL: process.env.FROM_EMAIL || '',
+      TO_EMAIL: process.env.TO_EMAIL || '',
+      USE_STUB_IG: process.env.USE_STUB_IG || 'false',
+      USE_STUB_EMAIL: process.env.USE_STUB_EMAIL || 'false',
+      USE_STUB_LLM: process.env.USE_STUB_LLM || 'false',
+      USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || 'false',
+    };
 
     // Lambda
     const worker = new lambdaNode.NodejsFunction(this, "WeeklyInsightWorker", {
@@ -33,15 +48,15 @@ export class PieGuysSocialsStack extends cdk.Stack {
       environment: {
         IG_SECRET_NAME: igSecret.secretName,
         OPEN_AI_SECRET_NAME: openAiSecret.secretName,
-        IG_BUSINESS_ID: process.env.IG_BUSINESS_ID!,
-        FROM_EMAIL: process.env.FROM_EMAIL!,
-        TO_EMAIL: process.env.TO_EMAIL!,
+        IG_BUSINESS_ID: runtimeConfig.IG_BUSINESS_ID,
+        FROM_EMAIL: runtimeConfig.FROM_EMAIL,
+        TO_EMAIL: runtimeConfig.TO_EMAIL,
         REGION: this.region,
         // Stub mode flags - set to "true" to use stubbed clients
-        USE_STUB_IG: process.env.USE_STUB_IG || "false",
-        USE_STUB_EMAIL: process.env.USE_STUB_EMAIL || "false",
-        USE_STUB_LLM: process.env.USE_STUB_LLM || "false",
-        USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || "false",
+        USE_STUB_IG: runtimeConfig.USE_STUB_IG,
+        USE_STUB_EMAIL: runtimeConfig.USE_STUB_EMAIL,
+        USE_STUB_LLM: runtimeConfig.USE_STUB_LLM,
+        USE_STUB_SECRETS: runtimeConfig.USE_STUB_SECRETS,
       },
     });
 
@@ -83,8 +98,8 @@ export class PieGuysSocialsStack extends cdk.Stack {
         entry: `${__dirname}/../lambda/refresh.ts`,
         handler: "handler",
         environment: {
-          USE_STUB_IG: process.env.USE_STUB_IG || "false",
-          USE_STUB_SECRETS: process.env.USE_STUB_SECRETS || "false",
+          USE_STUB_IG: runtimeConfig.USE_STUB_IG,
+          USE_STUB_SECRETS: runtimeConfig.USE_STUB_SECRETS,
         },
       }
     );
