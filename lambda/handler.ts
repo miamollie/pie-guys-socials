@@ -19,7 +19,14 @@ export const handler = async (event: any, context?: LambdaContext): Promise<any>
       () => igClient.getInsights(),
       context
     );
-    logger.info({ postCount: igInsights.data?.length || 0 }, "Instagram insights retrieved");
+    let postCount = 0;
+    try {
+      const insightsData = JSON.parse(igInsights);
+      postCount = insightsData.data?.length || 0;
+    } catch {
+      // Ignore parse errors
+    }
+    logger.info({ postCount }, "Instagram insights retrieved");
 
     // Ask LLM for weekly analysis and suggestions
     const aiRecommendations = await timeOperation(

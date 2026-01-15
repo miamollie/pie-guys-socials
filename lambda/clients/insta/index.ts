@@ -120,7 +120,7 @@ export class InstagramClient implements IInstagramClient {
     };
 
     const validDays = Math.floor(data.expires_in / 86400);
-    logger.info({ validDays, expiresIn: data.expires_in }, \"Instagram token refreshed\");
+    logger.info({ validDays, expiresIn: data.expires_in }, "Instagram token refreshed");
 
     // Update cached token with refreshed value
     this.token = data.access_token;
