@@ -1,5 +1,6 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { StubbedEmailClient } from "./stubbed";
+import logger from "../../utils/logger";
 
 export interface IEmailClient {
   send(message: {
@@ -57,10 +58,10 @@ export function createEmailClient(): IEmailClient {
   const useStub = process.env.USE_STUB_EMAIL === "true";
   
   if (useStub) {
-    console.log("📋 Using stubbed email client");
+    logger.info("Using stubbed email client");
     return new StubbedEmailClient();
   }
   
-  console.log("📧 Using real email client (SES)");
+  logger.info("Using real email client (SES)");
   return new EmailClient();
 }

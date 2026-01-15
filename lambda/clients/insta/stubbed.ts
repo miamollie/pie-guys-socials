@@ -1,17 +1,18 @@
 import { data } from "./stubs";
 import { IInstagramClient } from "./index";
+import logger from "../../utils/logger";
 
 /**
  * Stubbed Instagram client for testing without real API calls
  */
 export class StubbedInstagramClient implements IInstagramClient {
   public async getInsights(days: number = 7): Promise<string> {
-    console.log(`📋 Using stubbed IG insights (${days} days requested)`);
+    logger.info({ days }, "Using stubbed Instagram insights");
     return data;
   }
 
   public async refreshToken(): Promise<{ access_token: string }> {
-    console.log("📋 Stubbed token refresh - returning fake token");
+    logger.info("Stubbed token refresh - returning fake token");
     return {
       access_token: "FAKE_REFRESHED_TOKEN_" + Date.now(),
     };
