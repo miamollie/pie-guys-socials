@@ -90,10 +90,10 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::miamollie:role/GitHubActionsDeployRole_PieGuys
+          role-to-assume: arn:aws:iam::424795685451:role/GitHubActionsDeployRole_PieGuys
           aws-region: eu-west-1
       
-      - name: Deploy CDK stack
+      - name: Deploy CDK stack  
         run: npm run cdk:deploy -- --require-approval never
         env:
           # Production environment variables
