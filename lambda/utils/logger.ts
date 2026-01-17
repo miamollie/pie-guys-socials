@@ -48,17 +48,16 @@ export function createLogger(context?: Context) {
   if (!context) {
     return logger;
   }
-  const contextFields: Record<string, any> = {};
-  if (context.awsRequestId) contextFields.requestId = context.awsRequestId;
-  if (context.functionName) contextFields.functionName = context.functionName;
-  if (context.functionVersion) contextFields.functionVersion = context.functionVersion;
-  if (context.memoryLimitInMB) contextFields.memoryLimit = context.memoryLimitInMB;
-  if (context.logGroupName) contextFields.logGroup = context.logGroupName;
-  if (context.logStreamName) contextFields.logStream = context.logStreamName;
-  if (typeof context.getRemainingTimeInMillis === 'function') {
-    contextFields.remainingTime = context.getRemainingTimeInMillis();
-  }
-  return logger.child(contextFields);
+  // Directly pass context fields to child logger
+  return logger.child({
+    requestId: context.awsRequestId,
+    functionName: context.functionName,
+    functionVersion: context.functionVersion,
+    memoryLimit: context.memoryLimitInMB,
+    logGroup: context.logGroupName,
+    logStream: context.logStreamName,
+    remainingTime: typeof context.getRemainingTimeInMillis === 'function' ? context.getRemainingTimeInMillis() : undefined,
+  });
 }
 
 

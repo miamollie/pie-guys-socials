@@ -1,6 +1,7 @@
 import { createInstagramClient } from "./clients/insta";
 import { createSecretsClient } from "./clients/secrets";
-import { createLogger, logMetric, LambdaContext } from "./utils/logger";
+import { createLogger, logMetric } from "./utils/logger";
+import { Context } from "aws-lambda";
 
 const secretclient = createSecretsClient();
 const igclient = createInstagramClient();
@@ -9,7 +10,7 @@ const igclient = createInstagramClient();
  * Secrets Manager rotation Lambda for Instagram Graph long-lived tokens
  * Implements: createSecret, setSecret, testSecret, finishSecret
  */
-export const handler = async (event: any, context?: LambdaContext) => {
+export const handler = async (event: any, context?: Context) => {
   const logger = createLogger(context);
   logger.info({ event }, "Starting secret rotation");
 

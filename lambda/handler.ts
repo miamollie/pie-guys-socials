@@ -2,12 +2,13 @@ import { createInstagramClient } from "./clients/insta";
 import { RecommendationClient } from "./clients/recommendation";
 import { createEmailClient } from "./clients/email";
 import { createLLMClient } from "./clients/llmClient";
-import { createLogger, logMetric, LambdaContext } from "./utils/logger";
+import { createLogger, logMetric } from "./utils/logger";
+import { Context } from "aws-lambda";
 
 const igClient = createInstagramClient();
 const recsClient = new RecommendationClient(createLLMClient(), createEmailClient());
 
-export const handler = async (event: any, context?: LambdaContext): Promise<any> => {
+export const handler = async (event: any, context?: Context): Promise<any> => {
   const logger = createLogger(context);
   
   try {
