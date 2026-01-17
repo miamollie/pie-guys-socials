@@ -5,6 +5,8 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as secrets from "aws-cdk-lib/aws-secretsmanager";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import * as logs from "aws-cdk-lib/aws-logs";
 
 export class PieGuysSocialsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -108,5 +110,170 @@ export class PieGuysSocialsStack extends cdk.Stack {
       principal: new iam.ServicePrincipal("secretsmanager.amazonaws.com"),
       action: "lambda:InvokeFunction",
     });
+
+    // =========================================================================
+    // OBSERVABILITY: CloudWatch Alarms
+    // =========================================================================
+
+    // Alarm 1: Weekly insights handler errors
+    const insightsErrorAlarm = new cloudwatch.Alarm(this, "InsightsErrorAlarm", {
+      metric: worker.metricErrors({
+        statistic: "Sum",
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      alarmDescription: "Alert when weekly insights handler fails",
+      alarmName: "pie-guys-insights-handler-errors",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // Alarm 2: Token refresh handler errors
+    const refreshErrorAlarm = new cloudwatch.Alarm(this, "RefreshErrorAlarm", {
+      metric: refreshLambda.metricErrors({
+        statistic: "Sum",
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      alarmDescription: "Alert when Instagram token refresh fails",
+      alarmName: "pie-guys-refresh-handler-errors",
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+
+    // Alarm 3: Weekly insights handler duration (slow operations)
+    const insightsDurationAlarm = new cloudwatch.Alarm(
+      this,
+      "InsightsDurationAlarm",
+      {
+        metric: worker.metricDuration({
+          statistic: "Average",
+          period: cdk.Duration.hours(1),
+        }),
+        threshold: 30000, // 30 seconds in milliseconds
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        alarmDescription: "Alert when weekly insights handler runs slow",
+        alarmName: "pie-guys-insights-handler-slow",
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+
+    // =========================================================================
+    // OBSERVABILITY: CloudWatch Dashboard
+    // =========================================================================
+
+    new cloudwatch.Dashboard(this, "PieGuysDashboard", {
+      dashboardName: "PieGuys-Monitoring",
+    }).addWidgets(
+      // Row 1: Handler Status
+      new cloudwatch.GraphWidget({
+        title: "Insights Handler - Invocations & Errors",
+        left: [
+          worker.metricInvocations({
+            label: "Invocations",
+            statistic: "Sum",
+            period: cdk.Duration.hours(6),
+          }),
+          worker.metricErrors({
+            label: "Errors",
+            statistic: "Sum",
+            period: cdk.Duration.hours(6),
+            color: cloudwatch.Color.RED,
+          }),
+        ],
+        width: 12,
+      }),
+
+      new cloudwatch.GraphWidget({
+        title: "Token Refresh - Invocations & Errors",
+        left: [
+          refreshLambda.metricInvocations({
+            label: "Invocations",
+            statistic: "Sum",
+            period: cdk.Duration.hours(6),
+          }),
+          refreshLambda.metricErrors({
+            label: "Errors",
+            statistic: "Sum",
+            period: cdk.Duration.hours(6),
+            color: cloudwatch.Color.RED,
+          }),
+        ],
+        width: 12,
+      }),
+
+      // Row 2: Latency
+      new cloudwatch.GraphWidget({
+        title: "Insights Handler - Duration (ms)",
+        left: [
+          worker.metricDuration({
+            label: "Average",
+            statistic: "Average",
+            period: cdk.Duration.hours(6),
+          }),
+          worker.metricDuration({
+            label: "Max",
+            statistic: "Maximum",
+            period: cdk.Duration.hours(6),
+            color: cloudwatch.Color.ORANGE,
+          }),
+        ],
+        width: 12,
+      }),
+
+      new cloudwatch.GraphWidget({
+        title: "Token Refresh - Duration (ms)",
+        left: [
+          refreshLambda.metricDuration({
+            label: "Average",
+            statistic: "Average",
+            period: cdk.Duration.hours(6),
+          }),
+          refreshLambda.metricDuration({
+            label: "Max",
+            statistic: "Maximum",
+            period: cdk.Duration.hours(6),
+            color: cloudwatch.Color.ORANGE,
+          }),
+        ],
+        width: 12,
+      }),
+
+      // Row 3: Alarms Status
+      new cloudwatch.SingleValueWidget({
+        title: "Insights Handler - Error Status",
+        metrics: [insightsErrorAlarm.metric],
+        width: 6,
+      }),
+
+      new cloudwatch.SingleValueWidget({
+        title: "Token Refresh - Error Status",
+        metrics: [refreshErrorAlarm.metric],
+        width: 6,
+      }),
+
+      new cloudwatch.SingleValueWidget({
+        title: "Insights Duration - Slow Alert",
+        metrics: [insightsDurationAlarm.metric],
+        width: 6,
+      }),
+
+      // Row 4: Logs Insight
+      new cloudwatch.LogQueryWidget({
+        title: "Recent Errors (Last 24h)",
+        logGroupNames: [
+          worker.logGroup?.logGroupName || "",
+          refreshLambda.logGroup?.logGroupName || "",
+        ],
+        queryString: `
+          fields @timestamp, @message, functionName, operation, error
+          | filter @message like /error|Error|ERROR|failed|Failed/
+          | sort @timestamp desc
+          | limit 20
+        `,
+        width: 24,
+      })
+    );
   }
 }

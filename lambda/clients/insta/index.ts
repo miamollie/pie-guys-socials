@@ -1,6 +1,7 @@
 import { createSecretsClient, ISecretsClient } from "../secrets";
 import { data } from "./stubs";
 import { StubbedInstagramClient } from "./stubbed";
+import logger from "../../utils/logger";
 
 export interface IInstagramClient {
   getInsights(days?: number): Promise<string>;
@@ -40,7 +41,7 @@ export class InstagramClient implements IInstagramClient {
 
       this.token = token;
     } catch (err) {
-      console.error("❌ Failed to fetch IG token:", err);
+      logger.error({ error: err, secretName: InstagramClient.SECRET_NAME }, "Failed to fetch IG token from secrets");
       throw new Error("Could not initialize Instagram access token");
     }
   }
@@ -51,7 +52,7 @@ export class InstagramClient implements IInstagramClient {
 
     if (!response.ok) {
       const body = await response.text();
-      console.error("❌ Instagram API error:", body);
+      logger.error({ status: response.status, statusText: response.statusText, body }, "Instagram API request failed");
       throw new Error(
         `Instagram API request failed: ${response.status} - ${response.statusText}`
       );
@@ -86,10 +87,10 @@ export class InstagramClient implements IInstagramClient {
 
     try {
       const data = await this.request(url.toString());
-      console.log(`✅ IG insights fetched (${data.data?.length || 0} posts)`);
+      logger.info({ postCount: data.data?.length || 0, days, since, until }, "Instagram insights fetched");
       return JSON.stringify(data);
     } catch (err) {
-      console.error("❌ Error fetching IG insights:", err);
+      logger.error({ error: err, days, since, until }, "Error fetching Instagram insights");
       throw err;
     }
   }
@@ -118,9 +119,8 @@ export class InstagramClient implements IInstagramClient {
       expires_in: number;
     };
 
-    console.log(
-      `✅ Token refreshed, valid for ${data.expires_in / 86400} days`
-    );
+    const validDays = Math.floor(data.expires_in / 86400);
+    logger.info({ validDays, expiresIn: data.expires_in }, "Instagram token refreshed");
 
     // Update cached token with refreshed value
     this.token = data.access_token;
@@ -147,7 +147,7 @@ export class InstagramClient implements IInstagramClient {
       throw new Error("Token validation failed: missing or null user ID");
     }
 
-    console.log(`✅ Instagram token valid for user ID: ${data.id}`);
+    logger.info({ userId: data.id }, "Instagram token validated successfully");
   }
 }
 
@@ -158,10 +158,10 @@ export function createInstagramClient(): IInstagramClient {
   const useStub = process.env.USE_STUB_IG === "true";
   
   if (useStub) {
-    console.log("📋 Using stubbed Instagram client");
+    logger.info("Using stubbed Instagram client");
     return new StubbedInstagramClient();
   }
   
-  console.log("🌐 Using real Instagram client");
+  logger.info("Using real Instagram client");
   return new InstagramClient();
 }
