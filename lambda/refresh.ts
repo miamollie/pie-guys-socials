@@ -1,6 +1,6 @@
 import { createInstagramClient } from "./clients/insta";
 import { createSecretsClient } from "./clients/secrets";
-import { createLogger, timeOperation, logMetric, LambdaContext } from "./utils/logger";
+import { createLogger, logMetric, LambdaContext } from "./utils/logger";
 
 const secretclient = createSecretsClient();
 const igclient = createInstagramClient();
@@ -21,16 +21,16 @@ export const handler = async (event: any, context?: LambdaContext) => {
     // --- Step Routing ---------------------------------------------------------
     switch (step) {
       case "createSecret":
-        await timeOperation(`rotation-${step}`, () => createSecret(secretId, token, logger), context);
+        await createSecret(secretId, token, logger);
         break;
       case "setSecret":
-        await timeOperation(`rotation-${step}`, () => setSecret(secretId, logger), context);
+        await setSecret(secretId, logger);
         break;
       case "testSecret":
-        await timeOperation(`rotation-${step}`, () => testSecret(secretId, logger), context);
+        await testSecret(secretId, logger);
         break;
       case "finishSecret":
-        await timeOperation(`rotation-${step}`, () => finishSecret(secretId, token, logger), context);
+        await finishSecret(secretId, token, logger);
         break;
       default:
         throw new Error(`Invalid step parameter: ${step}`);

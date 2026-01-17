@@ -110,7 +110,7 @@ This project uses **structured logging** with [pino](https://getpino.io/) and **
 All logs are output as JSON to CloudWatch, making them queryable and filterable. Key features:
 
 - **Automatic Lambda context enrichment**: Each log includes `requestId`, `functionName`, and execution metadata
-- **Operation timing**: `timeOperation()` automatically logs duration for all async operations
+
 - **Error serialization**: Full error stack traces and context included in error logs
 - **Type-safe logging**: TypeScript interfaces prevent missing required fields
 

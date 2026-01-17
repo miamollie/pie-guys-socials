@@ -2,7 +2,7 @@ import { createInstagramClient } from "./clients/insta";
 import { RecommendationClient } from "./clients/recommendation";
 import { createEmailClient } from "./clients/email";
 import { createLLMClient } from "./clients/llmClient";
-import { createLogger, timeOperation, logMetric, LambdaContext } from "./utils/logger";
+import { createLogger, logMetric, LambdaContext } from "./utils/logger";
 
 const igClient = createInstagramClient();
 const recsClient = new RecommendationClient(createLLMClient(), createEmailClient());
@@ -14,11 +14,7 @@ export const handler = async (event: any, context?: LambdaContext): Promise<any>
     logger.info({ event }, "Starting weekly insights workflow");
     
     // Get IG insights
-    const igInsights = await timeOperation(
-      "fetch-instagram-insights",
-      () => igClient.getInsights(),
-      context
-    );
+    const igInsights = await igClient.getInsights();
     let postCount = 0;
     try {
       const insightsData = JSON.parse(igInsights);
@@ -29,18 +25,10 @@ export const handler = async (event: any, context?: LambdaContext): Promise<any>
     logger.info({ postCount }, "Instagram insights retrieved");
 
     // Ask LLM for weekly analysis and suggestions
-    const aiRecommendations = await timeOperation(
-      "generate-ai-recommendations",
-      () => recsClient.getRecommendation(igInsights),
-      context
-    );
+    const aiRecommendations = await recsClient.getRecommendation(igInsights);
 
     // Send email with recommendations
-    await timeOperation(
-      "send-email-recommendation",
-      () => recsClient.sendRecommendation(aiRecommendations),
-      context
-    );
+    await recsClient.sendRecommendation(aiRecommendations);
     
     // Log success metric
     logMetric("insights-workflow-success", 1);

@@ -88,50 +88,7 @@ export function createLogger(context?: LambdaContext) {
   }
 }
 
-/**
- * Time an operation and log the duration
- */
-export async function timeOperation<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  context?: LambdaContext
-): Promise<T> {
-  const log = context ? createLogger(context) : logger;
-  const start = Date.now();
 
-  try {
-    log.info({ operation }, `Starting ${operation}`);
-    const result = await fn();
-    const duration = Date.now() - start;
-    log.info(
-      { operation, duration },
-      `Completed ${operation} in ${duration}ms`
-    );
-    return result;
-  } catch (error) {
-    const duration = Date.now() - start;
-    log.error(
-      { operation, duration, error: serializeError(error) },
-      `Failed ${operation} after ${duration}ms`
-    );
-    throw error;
-  }
-}
-
-/**
- * Serialize error objects for logging
- */
-function serializeError(error: any): Record<string, any> {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      ...(error as any), // Include custom properties
-    };
-  }
-  return { error: String(error) };
-}
 
 /**
  * Log metrics for CloudWatch Logs Insights
