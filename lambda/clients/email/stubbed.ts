@@ -5,8 +5,8 @@ import { EmailMessage, IEmailClient } from "./index";
  */
 export class StubbedEmailClient implements IEmailClient {
   async send(message: EmailMessage): Promise<void> {
-    if (!message.to || !message.from) {
-      throw new Error("Email must include both 'to' and 'from'");
+    if (!message.to?.trim() || !message.from?.trim()) {
+      throw new Error(`Email must include both 'to' and 'from'. Got: to='${message.to}', from='${message.from}'`);
     }
 
     console.log("📧 Stubbed email send:");
