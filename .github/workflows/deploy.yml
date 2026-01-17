@@ -94,7 +94,7 @@ jobs:
           aws-region: eu-west-1
       
       - name: Deploy CDK stack  
-        run: npm run cdk:deploy -- --require-approval never
+        run: npm run cdk:deploy
         env:
           # Production environment variables
           AWS_REGION: eu-west-1
