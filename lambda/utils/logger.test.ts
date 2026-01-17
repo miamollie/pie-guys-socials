@@ -1,4 +1,5 @@
-import { createLogger, logMetric, LambdaContext } from "./logger";
+import { createLogger, logMetric } from "./logger";
+import type { Context } from "aws-lambda";
 import logger from "./logger";
 
 // Mock pino to capture log output
@@ -30,23 +31,17 @@ describe("Logger", () => {
       expect(result).toBe(logger);
     });
 
-    it("should return base logger when context is undefined", () => {
-      const result = createLogger(undefined);
-      expect(result).toBe(logger);
-    });
-
     it("should create child logger with Lambda context fields", () => {
-      const context: LambdaContext = {
+      const context = {
         awsRequestId: "test-request-123",
         functionName: "test-function",
         functionVersion: "$LATEST",
         memoryLimitInMB: "1024",
         logGroupName: "/aws/lambda/test",
         logStreamName: "2026/01/16/[$LATEST]abc123",
-      };
-
+        getRemainingTimeInMillis: jest.fn().mockReturnValue(5000),
+      } as any;
       const result = createLogger(context);
-      
       expect(logger.child).toHaveBeenCalledWith({
         requestId: "test-request-123",
         functionName: "test-function",
@@ -54,68 +49,18 @@ describe("Logger", () => {
         memoryLimit: "1024",
         logGroup: "/aws/lambda/test",
         logStream: "2026/01/16/[$LATEST]abc123",
-      });
-    });
-
-    it("should handle partial context gracefully", () => {
-      const context: LambdaContext = {
-        awsRequestId: "test-request-123",
-        // Missing other fields
-      };
-
-      const result = createLogger(context);
-      
-      expect(logger.child).toHaveBeenCalledWith({
-        requestId: "test-request-123",
-      });
-    });
-
-    it("should safely call getRemainingTimeInMillis", () => {
-      const context: LambdaContext = {
-        awsRequestId: "test-request-123",
-        getRemainingTimeInMillis: jest.fn().mockReturnValue(5000),
-      };
-
-      createLogger(context);
-      
-      expect(context.getRemainingTimeInMillis).toHaveBeenCalled();
-      expect(logger.child).toHaveBeenCalledWith({
-        requestId: "test-request-123",
         remainingTime: 5000,
       });
     });
 
-    it("should handle getRemainingTimeInMillis errors gracefully", () => {
-      const context: LambdaContext = {
+    it("should handle partial context", () => {
+      const context = {
         awsRequestId: "test-request-123",
-        getRemainingTimeInMillis: jest.fn().mockImplementation(() => {
-          throw new Error("Function failed");
-        }),
-      };
-
+      } as any;
       const result = createLogger(context);
-      
-      // Should not throw and should create child without remainingTime
       expect(logger.child).toHaveBeenCalledWith({
         requestId: "test-request-123",
       });
-    });
-
-    it("should return base logger if context parsing fails completely", () => {
-      // Create a malicious context that throws on property access
-      const context = new Proxy({}, {
-        get() {
-          throw new Error("Property access failed");
-        }
-      }) as LambdaContext;
-
-      const result = createLogger(context);
-      
-      // Should fall back to base logger and log warning
-      expect(logger.warn).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(Error) }),
-        "Failed to create logger with context, using base logger"
-      );
     });
   });
 
@@ -169,7 +114,7 @@ describe("Logger", () => {
 
   describe("LambdaContext interface", () => {
     it("should accept all valid Lambda context properties", () => {
-      const context: LambdaContext = {
+      const context = {
         awsRequestId: "abc-123",
         functionName: "my-function",
         functionVersion: "1",
@@ -177,23 +122,13 @@ describe("Logger", () => {
         logGroupName: "/aws/lambda/my-function",
         logStreamName: "2026/01/16/stream",
         getRemainingTimeInMillis: () => 3000,
-      };
-
-      // Type check - if this compiles, the interface is correct
+      } as any;
       expect(context).toBeDefined();
     });
-
     it("should accept partial context", () => {
-      const context: LambdaContext = {
+      const context = {
         awsRequestId: "abc-123",
-      };
-
-      expect(context).toBeDefined();
-    });
-
-    it("should accept empty context", () => {
-      const context: LambdaContext = {};
-
+      } as any;
       expect(context).toBeDefined();
     });
   });

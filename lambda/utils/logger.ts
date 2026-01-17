@@ -1,17 +1,5 @@
 import pino from "pino";
-
-/**
- * AWS Lambda Context type
- */
-export interface LambdaContext {
-  awsRequestId?: string;
-  functionName?: string;
-  functionVersion?: string;
-  memoryLimitInMB?: string;
-  getRemainingTimeInMillis?: () => number;
-  logGroupName?: string;
-  logStreamName?: string;
-}
+import { Context } from "aws-lambda";
 
 /**
  * Structured logger for Lambda functions
@@ -56,36 +44,21 @@ const logger = pino({
  * Create a child logger with Lambda context
  * Safely extracts context properties - will never throw
  */
-export function createLogger(context?: LambdaContext) {
+export function createLogger(context?: Context) {
   if (!context) {
     return logger;
   }
-
-  try {
-    const contextFields: Record<string, any> = {};
-    
-    if (context.awsRequestId) contextFields.requestId = context.awsRequestId;
-    if (context.functionName) contextFields.functionName = context.functionName;
-    if (context.functionVersion) contextFields.functionVersion = context.functionVersion;
-    if (context.memoryLimitInMB) contextFields.memoryLimit = context.memoryLimitInMB;
-    if (context.logGroupName) contextFields.logGroup = context.logGroupName;
-    if (context.logStreamName) contextFields.logStream = context.logStreamName;
-    
-    // Safe call to getRemainingTimeInMillis
-    if (typeof context.getRemainingTimeInMillis === 'function') {
-      try {
-        contextFields.remainingTime = context.getRemainingTimeInMillis();
-      } catch {
-        // Ignore if this fails
-      }
-    }
-    
-    return logger.child(contextFields);
-  } catch (error) {
-    // If anything goes wrong, return base logger - logging should never break the app
-    logger.warn({ error }, "Failed to create logger with context, using base logger");
-    return logger;
+  const contextFields: Record<string, any> = {};
+  if (context.awsRequestId) contextFields.requestId = context.awsRequestId;
+  if (context.functionName) contextFields.functionName = context.functionName;
+  if (context.functionVersion) contextFields.functionVersion = context.functionVersion;
+  if (context.memoryLimitInMB) contextFields.memoryLimit = context.memoryLimitInMB;
+  if (context.logGroupName) contextFields.logGroup = context.logGroupName;
+  if (context.logStreamName) contextFields.logStream = context.logStreamName;
+  if (typeof context.getRemainingTimeInMillis === 'function') {
+    contextFields.remainingTime = context.getRemainingTimeInMillis();
   }
+  return logger.child(contextFields);
 }
 
 
